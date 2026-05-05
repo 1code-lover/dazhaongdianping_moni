@@ -1,0 +1,25 @@
+// k6 压测（https://k6.io/）
+// set K6_SECKILL_TOKEN=authorization 值
+// k6 run --vus 50 --duration 30s -e BASE=http://127.0.0.1:8081 -e VOUCHER_ID=10 scripts/seckill-load.k6
+
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+const BASE = __ENV.BASE || 'http://127.0.0.1:8081';
+const VOUCHER_ID = __ENV.VOUCHER_ID || '10';
+const TOKEN = __ENV.K6_SECKILL_TOKEN || '';
+
+export function setup() {
+  if (!TOKEN) {
+    throw new Error('Please set env K6_SECKILL_TOKEN (same as browser authorization header)');
+  }
+}
+
+export default function () {
+  const url = `${BASE}/voucher-order/seckill/${VOUCHER_ID}`;
+  const res = http.post(url, null, {
+    headers: { authorization: TOKEN },
+  });
+  check(res, { 'status 200': (r) => r.status === 200 });
+  sleep(0.05);
+}

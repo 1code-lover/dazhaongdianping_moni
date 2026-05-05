@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/hmdp?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: your-db-username
+    password: your-db-password
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password: your-redis-password
+  kafka:
+    bootstrap-servers: 127.0.0.1:9092
+    template:
+      default-topic: seckill-order
+    consumer:
+      group-id: seckill-order-g1
+
+server:
+  port: 8081

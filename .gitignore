@@ -1,0 +1,58 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+*loh
+*.zip
+*.txt
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+# 忽略所有 md 文件
+*.md
+
+# 保留 README.md
+!README.md
+
+# 忽略嵌套 git 仓库，解决你刚才的警告
+heima_qianduan/nginx-1.18.0/html/hmdp/
+### Local Config ###
+src/main/resources/application-local.yaml
+src/main/resources/application-*.local.yaml
+
+### Logs & Reports ###
+reports/
+*.log
+hs_err_pid*
+replay_pid*
+
+### Python ###
+__pycache__/
+*.py[cod]
+.pytest_cache/
