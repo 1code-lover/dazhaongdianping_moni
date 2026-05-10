@@ -1,4 +1,4 @@
-# hm-dianping
+
 
 一个基于 `Spring Boot + Redis + MySQL + Kafka + Nginx` 的大众点评类本地生活服务项目。
 
