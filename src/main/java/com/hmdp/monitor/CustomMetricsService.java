@@ -7,6 +7,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * 工具类服务，当前未注入使用，待秒杀和缓存功能实现后集成：
+ * - VoucherOrderServiceImpl: 秒杀成功/失败指标（incrementSeckillSuccess/Fail）
+ * - CacheClient: Redis命中/未命中指标（recordRedisHit/Miss）
+ */
 @Service
 public class CustomMetricsService {
 
