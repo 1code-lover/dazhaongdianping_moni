@@ -97,3 +97,29 @@ logging:
     com.hmdp: info
   pattern:
     dateformat: mm:ss.SSS
+
+# AI配置
+ai:
+  enabled: true
+  base-url: ${AI_BASE_URL:https://api.openai.com}
+  api-key: ${AI_API_KEY:}
+  model: ${AI_MODEL:gpt-3.5-turbo}
+  temperature: 0.7
+  max-tokens: 1000
+  timeout: 30000
+
+  retry:
+    max-attempts: 3
+    initial-delay-ms: 1000
+
+  security:
+    sensitive-words: ${AI_SENSITIVE_WORDS:政治,暴力,色情,赌博,毒品}
+    prompt-injection-protection: true
+
+  chat:
+    max-history: 10
+    session-timeout: 3600
+    max-message-length: 500
+
+  knowledge:
+    retrieval-method: keyword
