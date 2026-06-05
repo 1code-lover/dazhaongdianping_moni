@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hmdp.dto.Result;
 import com.hmdp.entity.Shop;
+import com.hmdp.service.IShopSearchService;
 import com.hmdp.service.IShopService;
 import com.hmdp.utils.SystemConstants;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +25,9 @@ public class ShopController {
 
     @Resource
     public IShopService shopService;
+    
+    @Resource
+    private IShopSearchService shopSearchService;
 
     /**
      * 根据id查询商铺信息
@@ -92,5 +96,17 @@ public class ShopController {
                 .page(new Page<>(current, SystemConstants.MAX_PAGE_SIZE));
         // 返回数据
         return Result.ok(page.getRecords());
+    }
+
+    @GetMapping("/search")
+    public Result searchShop(
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "current", defaultValue = "1") Integer current,
+            @RequestParam(value = "size", defaultValue = "10") Integer size
+    ) {
+        if (StrUtil.isBlank(keyword)) {
+            return Result.fail("请输入搜索关键字");
+        }
+        return shopSearchService.searchByKeyword(keyword, current, size);
     }
 }
