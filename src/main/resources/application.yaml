@@ -79,6 +79,19 @@ canal:
 mybatis-plus:
   type-aliases-package: com.hmdp.entity
 
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  endpoint:
+    health:
+      show-details: always
+
 logging:
   level:
     com.hmdp: info
