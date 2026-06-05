@@ -102,11 +102,13 @@ public class ShopController {
     public Result searchShop(
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "current", defaultValue = "1") Integer current,
-            @RequestParam(value = "size", defaultValue = "10") Integer size
+            @RequestParam(value = "size", defaultValue = "10") Integer size,
+            @RequestParam(value = "x", required = false) Double x,
+            @RequestParam(value = "y", required = false) Double y
     ) {
         if (StrUtil.isBlank(keyword)) {
             return Result.fail("请输入搜索关键字");
         }
-        return shopSearchService.searchByKeyword(keyword, current, size);
+        return shopSearchService.searchByKeyword(keyword, current, size, x, y);
     }
 }
