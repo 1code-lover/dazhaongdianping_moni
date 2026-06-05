@@ -68,6 +68,14 @@ app:
       enabled: true
       interval-ms: 300000
 
+# Canal配置
+canal:
+  enabled: ${CANAL_ENABLED:false}
+  host: ${CANAL_HOST:localhost}
+  port: ${CANAL_PORT:11111}
+  destination: ${CANAL_DESTINATION:example}
+  batch-size: ${CANAL_BATCH_SIZE:100}
+
 mybatis-plus:
   type-aliases-package: com.hmdp.entity
 
