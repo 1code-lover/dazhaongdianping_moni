@@ -55,6 +55,27 @@
 - 异步订单落库
 - 重试与失败补偿
 
+### 套餐
+
+- 商家发布套餐（标题、价格、库存、有效期）
+- 用户浏览套餐列表和详情
+- 套餐上下架管理
+- 库存管理
+
+### 订单
+
+- 统一订单管理（优惠券订单、套餐订单）
+- 订单状态流转（待支付 → 待使用 → 已核销）
+- 订单取消和库存回滚
+- 订单查询
+
+### 核销
+
+- 核销码生成（6位数字）
+- 商家核销订单
+- 核销记录查询
+- 套餐过期校验
+
 ### 搜索
 
 - 商户全文搜索（名称、地址、商圈）
@@ -252,6 +273,10 @@ hm-dianping
 - [src/main/resources/db/voucher_order_unique_index.sql](/D:/Java/hm-dianping/src/main/resources/db/voucher_order_unique_index.sql:1)
 - [src/main/resources/db/voucher_order_fail_task.sql](/D:/Java/hm-dianping/src/main/resources/db/voucher_order_fail_task.sql:1)
 - [src/main/resources/db/voucher_order_fail_task_failure_type.sql](/D:/Java/hm-dianping/src/main/resources/db/voucher_order_fail_task_failure_type.sql:1)
+
+套餐与订单功能额外执行：
+
+- [src/main/resources/db/combo_order_tables.sql](src/main/resources/db/combo_order_tables.sql:1)
 
 ### 配置说明
 

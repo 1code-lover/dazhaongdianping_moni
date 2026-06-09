@@ -40,13 +40,14 @@ public class ShopSearchServiceImpl implements IShopSearchService {
     @Override
     public Result searchByKeyword(String keyword, Integer page, Integer size, Double x, Double y) {
         NativeSearchQueryBuilder queryBuilder = new NativeSearchQueryBuilder()
-                .withQuery(matchQuery("name", keyword).boost(2.0f)
-                        .or(matchQuery("address", keyword))
-                        .or(matchQuery("area", keyword)))
+                .withQuery(boolQuery()
+                        .should(matchQuery("name", keyword).boost(2.0f))
+                        .should(matchQuery("address", keyword))
+                        .should(matchQuery("area", keyword)))
                 .withPageable(PageRequest.of(page - 1, size));
         
         if (x != null && y != null) {
-            queryBuilder.withSort(SortBuilders.geoDistanceSort("location", new GeoPoint(y, x))
+            queryBuilder.withSort(SortBuilders.geoDistanceSort("location", new org.elasticsearch.common.geo.GeoPoint(y, x))
                     .order(SortOrder.ASC)
                     .unit(org.elasticsearch.common.unit.DistanceUnit.KILOMETERS));
         }

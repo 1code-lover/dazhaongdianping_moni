@@ -114,7 +114,8 @@ public class ChatServiceImpl implements ChatService {
             contextManager.saveMessage(sessionId, new ChatMessage("user", userMessage));
             contextManager.saveMessage(sessionId, new ChatMessage("assistant", reply));
 
-            asyncExecutor.submit(() -> saveToMySQL(sessionId, userMessage, reply, intent, duration));
+            final String finalReply = reply;
+            asyncExecutor.submit(() -> saveToMySQL(sessionId, userMessage, finalReply, intent, duration));
 
             ChatResponse response = new ChatResponse();
             response.setSessionId(sessionId);

@@ -111,4 +111,10 @@ public class ShopController {
         }
         return shopSearchService.searchByKeyword(keyword, current, size, x, y);
     }
+
+    @PostMapping("/sync")
+    public Result syncShopToEs() {
+        shopSearchService.syncAllShopsToEs();
+        return Result.ok("同步成功");
+    }
 }

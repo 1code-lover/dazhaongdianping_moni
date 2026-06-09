@@ -47,6 +47,12 @@ public class OpenAiClient implements AiClient {
 
     @Override
     public String chat(List<ChatMessage> messages) {
+        // 如果API Key为空，直接返回null触发降级
+        if (apiKey == null || apiKey.isEmpty()) {
+            log.warn("AI API Key未配置，使用降级模式");
+            return null;
+        }
+        
         int attempts = 0;
         long delay = initialDelayMs;
         
