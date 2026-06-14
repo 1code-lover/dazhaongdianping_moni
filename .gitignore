@@ -79,6 +79,9 @@ reports/
 hs_err_pid*
 replay_pid*
 
+### macOS ###
+.DS_Store
+
 ### Python ###
 __pycache__/
 *.py[cod]
