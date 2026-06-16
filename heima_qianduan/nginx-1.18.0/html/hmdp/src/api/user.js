@@ -7,7 +7,7 @@ export const sendCode = (phone) => {
 
 // 登录
 export const login = (phone, code) => {
-  return request.post('/user/login', null, { params: { phone, code } })
+  return request.post('/user/login', { phone, code })
 }
 
 // 获取用户信息
