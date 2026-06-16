@@ -166,6 +166,68 @@ perf: 性能优化
 
 ---
 
+## 设计原则
+
+### 最小开发原则（单一职责）
+
+**每个函数只负责一个小功能，不允许一个函数负责多个功能。**
+
+```java
+// ✓ 正确：每个函数职责单一
+public Long createOrder(OrderDTO orderDTO) {
+    validateOrder(orderDTO);
+    Long orderId = generateOrderId();
+    saveOrder(orderDTO, orderId);
+    return orderId;
+}
+
+private void validateOrder(OrderDTO orderDTO) {
+    // 只负责校验
+}
+
+private Long generateOrderId() {
+    // 只负责生成ID
+}
+
+private void saveOrder(OrderDTO orderDTO, Long orderId) {
+    // 只负责保存
+}
+
+// ✗ 错误：一个函数做了太多事情
+public Long createOrder(OrderDTO orderDTO) {
+    // 校验
+    if (orderDTO == null) throw new BusinessException("参数为空");
+    if (orderDTO.getComboId() == null) throw new BusinessException("套餐ID为空");
+    
+    // 生成ID
+    Long orderId = IdGenerator.nextId();
+    
+    // 保存订单
+    Order order = new Order();
+    order.setId(orderId);
+    orderMapper.insert(order);
+    
+    // 扣减库存
+    comboService.reduceStock(orderDTO.getComboId());
+    
+    // 发送消息
+    kafkaTemplate.send("order-topic", orderId);
+    
+    return orderId;
+}
+```
+
+### 函数拆分标准
+
+| 判断维度 | 说明 |
+|----------|------|
+| 行数 | 函数体不超过 30 行 |
+| 职责 | 只做一件事 |
+| 命名 | 能用一句话描述函数功能 |
+| 参数 | 不超过 4 个参数 |
+
+---
+
 ## 代码风格规范
 
 ### 命名规范
