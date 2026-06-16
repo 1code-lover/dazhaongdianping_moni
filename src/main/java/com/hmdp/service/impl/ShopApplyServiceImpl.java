@@ -88,6 +88,9 @@ public class ShopApplyServiceImpl extends ServiceImpl<ShopApplyMapper, ShopApply
     @Override
     public Result getApplyStatus() {
         Long userId = UserHolder.getUser().getId();
+        if (userId == null) {
+            return Result.fail("用户未登录");
+        }
         
         ShopApply apply = lambdaQuery()
                 .eq(ShopApply::getUserId, userId)
