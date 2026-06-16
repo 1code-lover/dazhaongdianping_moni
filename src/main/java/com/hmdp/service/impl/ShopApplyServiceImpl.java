@@ -132,7 +132,10 @@ public class ShopApplyServiceImpl extends ServiceImpl<ShopApplyMapper, ShopApply
         if (apply == null) {
             return Result.fail("申请记录不存在");
         }
-        log.info("审核申请 - 当前状态: {}, 目标状态: {}", apply.getStatus(), status);
+        log.info("审核申请 - 当前状态: {}, 目标状态: {}, isDeleted: {}", apply.getStatus(), status, apply.getIsDeleted());
+        if (apply.getIsDeleted() != null && apply.getIsDeleted() == 1) {
+            return Result.fail("申请记录已删除");
+        }
         if (apply.getStatus() != 0) {
             return Result.fail("该申请已审核，当前状态: " + apply.getStatus());
         }
@@ -140,7 +143,13 @@ public class ShopApplyServiceImpl extends ServiceImpl<ShopApplyMapper, ShopApply
         // 更新申请状态
         apply.setStatus(status);
         apply.setAuditTime(LocalDateTime.now());
-        apply.setAuditorId(UserHolder.getUser().getId());
+        // 获取审核人ID（admin接口可能没有登录用户）
+        try {
+            apply.setAuditorId(UserHolder.getUser().getId());
+        } catch (Exception e) {
+            log.warn("无法获取审核人ID，设置为系统审核");
+            apply.setAuditorId(0L);
+        }
         if (status == 2) {
             if (StrUtil.isBlank(rejectReason)) {
                 return Result.fail("拒绝原因不能为空");
@@ -154,7 +163,8 @@ public class ShopApplyServiceImpl extends ServiceImpl<ShopApplyMapper, ShopApply
             Shop shop = new Shop();
             shop.setName(apply.getShopName());
             shop.setTypeId(apply.getShopTypeId());
-            shop.setImages(apply.getShopImg());
+            // images字段不能为空，设置默认值
+            shop.setImages(apply.getShopImg() != null ? apply.getShopImg() : "");
             shop.setAddress(apply.getAddress());
             shop.setX(apply.getX() != null ? apply.getX().doubleValue() : null);
             shop.setY(apply.getY() != null ? apply.getY().doubleValue() : null);

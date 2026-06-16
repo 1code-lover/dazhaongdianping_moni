@@ -32,7 +32,8 @@ public class MvcConfig implements WebMvcConfigurer {
                         "/swagger-resources/**",
                         "/v2/api-docs/**",
                         "/combo/list/**",
-                        "/combo/*"
+                        "/combo/*",
+                        "/admin/**"
                 ).order(1);
         // token刷新的拦截器
         registry.addInterceptor(new RefreshTokenInterceptor(stringRedisTemplate)).addPathPatterns("/**").order(0);
