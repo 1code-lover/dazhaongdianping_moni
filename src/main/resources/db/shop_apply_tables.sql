@@ -2,6 +2,7 @@
 CREATE TABLE IF NOT EXISTS `tb_shop_apply` (
     `id` bigint(20) NOT NULL AUTO_INCREMENT,
     `user_id` bigint(20) NOT NULL COMMENT '申请人用户ID',
+    `shop_id` bigint(20) DEFAULT NULL COMMENT '审核通过后创建的店铺ID',
     `shop_name` varchar(100) NOT NULL COMMENT '店铺名称',
     `shop_type_id` bigint(20) NOT NULL COMMENT '店铺类型ID',
     `shop_img` varchar(500) DEFAULT NULL COMMENT '店铺封面图/Logo',

@@ -175,6 +175,10 @@ public class ShopApplyServiceImpl extends ServiceImpl<ShopApplyMapper, ShopApply
             shop.setUpdateTime(LocalDateTime.now());
             shopMapper.insert(shop);
             
+            // 保存店铺ID到申请记录
+            apply.setShopId(shop.getId());
+            updateById(apply);
+            
             log.info("商家入驻审核通过，店铺创建成功: shopId={}, shopName={}, userId={}", 
                     shop.getId(), shop.getName(), apply.getUserId());
         }
