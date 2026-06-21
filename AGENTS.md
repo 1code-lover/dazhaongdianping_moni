@@ -1,65 +1,55 @@
 # 项目开发规范
 
+## 目录
+
+- [快速参考](#快速参考)
+- [开发流程](#开发流程)
+- [代码注释规范](#代码注释规范)
+- [提交信息格式](#提交信息格式)
+- [分支管理规范](#分支管理规范)
+- [设计原则](#设计原则)
+- [代码风格规范](#代码风格规范)
+- [测试规范](#测试规范)
+- [代码审查清单](#代码审查清单)
+- [环境和工具](#环境和工具)
+- [常见问题](#常见问题)
+
+---
+
+## 快速参考
+
+| 项目 | 要点 |
+|------|------|
+| **流程** | 设计方案 → 审核 → 实施方案 → 审核 → 编码 → 测试方案 → 审核 → 执行测试 → 测试报告 → 审核 → 提交 |
+| **提交** | `feat/fix/docs/chore/refactor/perf: 描述` |
+| **命名** | 类 `PascalCase`、方法 `camelCase`、常量 `UPPER_SNAKE_CASE`、变量 `camelCase` |
+| **函数** | 单一职责、≤30 行、≤4 参数 |
+| **测试** | 命名 `test{方法}{场景}{结果}`、覆盖率 ≥80% |
+| **注释** | 文件头 + 函数注释（必须），复杂逻辑行内注释 |
+
+---
+
 ## 开发流程
 
-每个功能开发必须遵循以下完整流程，确保代码质量和可追溯性。
+每个功能遵循完整流程，确保质量和可追溯性：
 
 ```
 开发方案 → 审核 → 实施方案 → 审核 → 编写代码 → 测试方案 → 审核 → 执行测试 → 测试报告 → 审核 → 提交推送
 ```
 
----
+### 阶段产出
 
-## 步骤详解
+| 阶段 | 内容 | 产出 |
+|------|------|------|
+| **1. 开发方案** | 需求分析、业务流程、数据模型、接口设计 | `docs/design/{date}-{feature}-requirements.md` |
+| **2. 实施方案** | 文件结构、Task拆分、实现细节、单测计划 | `docs/superpowers/plans/{date}-{feature}-plan.md` |
+| **3. 编写代码** | 遵循规范、中文注释、编译通过 | — |
+| **4. 测试方案** | 单元/接口/异常测试计划 | `docs/reports/{date}-{feature}-test-plan.md` |
+| **5. 执行测试** | 运行单测、接口测试、业务验证 | — |
+| **6. 测试报告** | 用例结果、覆盖率、缺陷记录、结论 | `docs/reports/{date}-{feature}-test-report.md` |
+| **7. 提交推送** | 语义化提交、推送远程 | — |
 
-### Step 1: 开发方案
-- 功能需求分析
-- 业务流程设计
-- 数据模型设计
-- 接口设计
-
-**输出：** `docs/design/{date}-{feature}-requirements.md`
-**等待审核通过后进入下一步**
-
-### Step 2: 实施方案
-- 文件结构规划
-- Task拆分（含具体步骤）
-- 代码实现细节
-- 单元测试计划
-
-**输出：** `docs/superpowers/plans/{date}-{feature}-plan.md`
-**等待审核通过后进入下一步**
-
-### Step 3: 编写代码
-- 遵循现有代码规范
-- 添加中文注释（文件头 + 函数注释）
-- 编译验证通过
-
-### Step 4: 测试方案
-- 单元测试计划
-- 接口测试计划
-- 异常场景测试计划
-
-**输出：** `docs/reports/{date}-{feature}-test-plan.md`
-**等待审核通过后进入下一步**
-
-### Step 5: 执行测试
-- 运行单元测试
-- 执行接口测试
-- 验证业务流程
-
-### Step 6: 测试报告
-- 测试用例与结果
-- 覆盖率统计
-- 缺陷记录
-- 测试结论
-
-**输出：** `docs/reports/{date}-{feature}-test-report.md`
-**等待审核通过后进入下一步**
-
-### Step 7: 提交推送
-- 语义化提交信息
-- 推送到远程仓库
+> 每个阶段需审核通过后方可进入下一步。
 
 ---
 
@@ -87,9 +77,7 @@
  * @return 订单ID
  * @throws BusinessException 库存不足时抛出
  */
-public Long createOrder(OrderDTO orderDTO) {
-    ...
-}
+public Long createOrder(OrderDTO orderDTO) { ... }
 ```
 
 ### 行内注释（复杂逻辑必须）
@@ -97,26 +85,6 @@ public Long createOrder(OrderDTO orderDTO) {
 ```java
 // 分布式锁防止超卖
 boolean locked = tryLock("order:" + comboId);
-if (!locked) {
-    throw new BusinessException("请稍后重试");
-}
-```
-
-### 测试代码注释
-
-```java
-@Test
-void testCreateOrder() {
-    // given: 准备测试数据
-    OrderDTO dto = new OrderDTO();
-    dto.setComboId(1L);
-    
-    // when: 执行测试
-    Long orderId = orderService.createOrder(dto);
-    
-    // then: 验证结果
-    assertNotNull(orderId);
-}
 ```
 
 ---
@@ -139,30 +107,18 @@ perf: 性能优化
 
 ### 分支命名
 
-- **功能分支**：`feat/{issue-id}-{feature-name}`
-  - 例：`feat/123-user-login`
-- **修复分支**：`fix/{issue-id}-{bug-name}`
-  - 例：`fix/456-cache-bug`
-- **文档分支**：`docs/{description}`
-  - 例：`docs/api-documentation`
-- **重构分支**：`refactor/{description}`
-  - 例：`refactor/shop-service`
+| 类型 | 格式 | 示例 |
+|------|------|------|
+| 功能 | `feat/{issue-id}-{name}` | `feat/123-user-login` |
+| 修复 | `fix/{issue-id}-{name}` | `fix/456-cache-bug` |
+| 文档 | `docs/{description}` | `docs/api-documentation` |
+| 重构 | `refactor/{description}` | `refactor/shop-service` |
 
-### 分支保护规则
+### 规则
 
 - `master` 分支受保护，不允许直接推送
-- 必须通过 Pull Request 合并
-- PR 需要至少 1 人审核通过
-- 所有 CI 检查必须通过
-
-### Pull Request 流程
-
-1. 从 `master` 创建功能分支
-2. 本地开发完成，编写测试和文档
-3. 提交 PR，填写详细描述
-4. 等待审核和 CI 检查
-5. 审核通过后合并到 `master`
-6. 删除功能分支
+- 必须通过 PR 合并，至少 1 人审核，CI 检查通过
+- PR 流程：创建分支 → 开发+测试 → 提交 PR → 审核 → 合并 → 删除分支
 
 ---
 
@@ -170,61 +126,14 @@ perf: 性能优化
 
 ### 最小开发原则（单一职责）
 
-**每个函数只负责一个小功能，不允许一个函数负责多个功能。**
+每个函数只负责一个小功能。拆分标准：
 
-```java
-// ✓ 正确：每个函数职责单一
-public Long createOrder(OrderDTO orderDTO) {
-    validateOrder(orderDTO);
-    Long orderId = generateOrderId();
-    saveOrder(orderDTO, orderId);
-    return orderId;
-}
-
-private void validateOrder(OrderDTO orderDTO) {
-    // 只负责校验
-}
-
-private Long generateOrderId() {
-    // 只负责生成ID
-}
-
-private void saveOrder(OrderDTO orderDTO, Long orderId) {
-    // 只负责保存
-}
-
-// ✗ 错误：一个函数做了太多事情
-public Long createOrder(OrderDTO orderDTO) {
-    // 校验
-    if (orderDTO == null) throw new BusinessException("参数为空");
-    if (orderDTO.getComboId() == null) throw new BusinessException("套餐ID为空");
-    
-    // 生成ID
-    Long orderId = IdGenerator.nextId();
-    
-    // 保存订单
-    Order order = new Order();
-    order.setId(orderId);
-    orderMapper.insert(order);
-    
-    // 扣减库存
-    comboService.reduceStock(orderDTO.getComboId());
-    
-    // 发送消息
-    kafkaTemplate.send("order-topic", orderId);
-    
-    return orderId;
-}
-```
-
-### 函数拆分标准
-
-| 判断维度 | 说明 |
-|----------|------|
-| 行数 | 函数体不超过 30 行 |
+| 维度 | 标准 |
+|------|------|
+| 行数 | 函数体 ≤ 30 行 |
 | 职责 | 只做一件事 |
-| 命名 | 能用一句话描述函数功能 |
-| 参数 | 不超过 4 个参数 |
+| 命名 | 能用一句话描述 |
+| 参数 | ≤ 4 个 |
 
 ---
 
@@ -232,254 +141,66 @@ public Long createOrder(OrderDTO orderDTO) {
 
 ### 命名规范
 
-**类名**（PascalCase）
-```java
-// ✓ 正确
-public class UserService
-public class VoucherOrderController
-public class CacheClient
+| 类型 | 规范 | 示例 |
+|------|------|------|
+| 类名 | PascalCase | `UserService`, `CacheClient` |
+| 方法名 | camelCase | `queryUserById`, `saveBlog` |
+| 常量 | UPPER_SNAKE_CASE | `LOGIN_USER_KEY`, `MAX_PAGE_SIZE` |
+| 变量 | camelCase | `userPhone`, `pageSize`, `shopList` |
 
-// ✗ 错误
-public class user_service
-public class UserService_Impl
-```
+### 格式规范
 
-**方法名**（camelCase）
-```java
-// ✓ 正确
-public Result queryUserById(Long userId)
-public void saveBlog(Blog blog)
-public Boolean isFollowing(Long userId, Long followUserId)
-
-// ✗ 错误
-public Result query_user_by_id(Long userId)
-public void SaveBlog(Blog blog)
-```
-
-**常量**（UPPER_SNAKE_CASE）
-```java
-// ✓ 正确
-public static final String LOGIN_USER_KEY = "login:user:";
-public static final Integer MAX_PAGE_SIZE = 10;
-public static final Long CACHE_EXPIRATION_MINUTES = 30L;
-
-// ✗ 错误
-public static final String loginUserKey = "login:user:";
-public static final Integer max_page_size = 10;
-```
-
-**变量名**（camelCase）
-```java
-// ✓ 正确
-String userPhone;
-Integer pageSize;
-List<Shop> shopList;
-Map<String, Object> resultMap;
-
-// ✗ 错误
-String user_phone;
-Integer PageSize;
-List<Shop> shop_list;
-Map<String, Object> result_map;
-```
-
-### 代码格式
-
-- **缩进**：使用 4 个空格（不用 Tab）
-- **行长**：不超过 120 个字符
-- **空行**：方法之间保留 1 个空行，逻辑块之间保留 1 个空行
-- **导入包**：按照字母顺序排序，分为三组：
-  - 标准库（java.* / javax.*）
-  - 第三方库（com.* / org.* / cn.* 等）
-  - 项目内部（com.hmdp.*）
-
-```java
-// ✓ 正确的导入顺序
-import java.util.*;
-import javax.annotation.Resource;
-
-import com.alibaba.fastjson.JSON;
-import org.springframework.stereotype.Service;
-
-import com.hmdp.dto.Result;
-import com.hmdp.service.IUserService;
-```
-
-### 集合和泛型
-
-```java
-// ✓ 正确
-List<String> names = new ArrayList<>();
-Map<String, Integer> countMap = new HashMap<>();
-Set<Long> userIds = new HashSet<>();
-
-// ✗ 错误
-List names = new ArrayList();
-Map countMap = new HashMap();
-List<String> names = new ArrayList(); // 右侧应该使用 <>
-```
+- **缩进**：4 空格
+- **行长**：≤ 120 字符
+- **空行**：方法间 1 行，逻辑块间 1 行
+- **导入顺序**：标准库 (`java.*`) → 第三方 (`com.*`/`org.*`) → 项目内部 (`com.hmdp.*`)
+- **集合初始化**：使用菱形运算符 `new ArrayList<>()`
 
 ---
 
 ## 测试规范
 
-### 单元测试要求
+- **覆盖率**：关键业务逻辑 ≥ 80%，Service/Util 层必须
+- **命名**：`test{方法名}{场景}{预期结果}()`
+- **Mock 策略**：Service 层 Mock DB 和外部依赖；集成测试用 H2；Redis 用 Embedded Redis
 
-- 新功能必须编写单元测试
-- 关键业务逻辑覆盖率 ≥ 80%
-- Service 层和 Util 层测试为必须
-
-### 测试命名规范
-
-```java
-@Test
-void test{方法名}{场景}{预期结果}() {
-    // given: 准备测试数据
-    // when: 执行被测方法
-    // then: 验证结果
-}
-```
-
-例子：
-```java
-@Test
-void testSeckillVoucherWhenStockEnoughThenSuccess() {
-    // given
-    Long voucherId = 1L;
-    
-    // when
-    Result result = voucherOrderService.seckillVoucher(voucherId);
-    
-    // then
-    assertTrue(result.isSuccess());
-}
-
-@Test
-void testSeckillVoucherWhenStockEmptyThenFail() {
-    // given
-    Long voucherId = 2L;
-    // 清空库存
-    
-    // when
-    Result result = voucherOrderService.seckillVoucher(voucherId);
-    
-    // then
-    assertFalse(result.isSuccess());
-}
-```
-
-### Mock 策略
-
-- Service 层单元测试：Mock 数据库和外部依赖
-- 集成测试：使用真实数据库或内存数据库（H2）
-- Redis 操作：使用 Embedded Redis 或 Mock
-- 秒杀链路：使用 Kafka MockProducer
+详见 [TESTING.md](TESTING.md)
 
 ---
 
 ## 代码审查清单
 
-提交 PR 前，自检以下项：
-
 - [ ] 代码风格符合规范
-- [ ] 添加了必要的中文注释
-- [ ] 编写了单元测试
-- [ ] 测试覆盖率 ≥ 80%
-- [ ] 没有硬编码的魔法值
-- [ ] 没有 TODO / FIXME 注释
-- [ ] 没有打印 System.out.println
-- [ ] 使用了 slf4j 日志框架
+- [ ] 添加必要中文注释
+- [ ] 编写单元测试，覆盖率 ≥ 80%
+- [ ] 无硬编码魔法值
+- [ ] 无 TODO / FIXME
+- [ ] 无 `System.out.println`，使用 slf4j
 - [ ] 数据库查询有性能考虑
 - [ ] Redis 操作有异常处理
-- [ ] 接口有必要的权限检查
+- [ ] 接口有权限检查
 
 ---
 
 ## 环境和工具
 
-### 推荐 IDE 和插件
+**环境要求**：Java 8、Maven 3.6+、MySQL 5.7+、Redis 6.x、Kafka 2.x+
 
-**IntelliJ IDEA**（推荐）
-- 插件：
-  - Alibaba Java Coding Guidelines（代码规范检查）
-  - Save Actions（自动格式化）
-  - SonarLint（代码质量分析）
-  - Lombok Plugin（Lombok 支持）
-  - CheckStyle（代码风格检查）
+**推荐 IDE**：IntelliJ IDEA + Alibaba Java Coding Guidelines、Save Actions、SonarLint、Lombok 插件
 
-### 本地开发环境
+**调试工具**：Postman（API）、Redis Desktop Manager、MySQL Workbench
 
-```bash
-# 检查 Java 版本（需要 Java 8）
-java -version
-
-# 检查 Maven 版本（需要 3.6+）
-mvn -v
-
-# 检查 MySQL 版本（需要 5.7+）
-mysql --version
-
-# 检查 Redis 版本（需要 6.x）
-redis-cli --version
-
-# 检查 Kafka 版本（需要 2.x+）
-# Kafka 通常不需要单独检查，通过配置文件验证
-```
-
-### IDE 代码格式化配置
-
-**IntelliJ IDEA 设置**
-1. Preferences → Editor → Code Style → Java
-2. 设置缩进为 4 个空格
-3. 设置行长限制为 120
-4. 启用"Optimize imports"
-5. 导入 Alibaba 代码规范检查规则
-
-### 调试工具
-
-- **Postman / Reqable**：API 测试
-- **Redis Desktop Manager**：Redis 数据查看
-- **MySQL Workbench**：数据库管理
-- **Kafka Topic UI**：Kafka 消息查看
+详见 [TOOLS.md](TOOLS.md)
 
 ---
 
-## 常见问题和解决方案
+## 常见问题
 
-### Q1: 如何快速修复代码风格问题？
+| 问题 | 摘要 |
+|------|------|
+| 代码风格修复 | IDEA: `Ctrl+Shift+L` 格式化 |
+| 测试覆盖率 | `mvn clean test jacoco:report` → `target/site/jacoco/index.html` |
+| 本地运行测试 | `mvn clean test` / `mvn "-Dtest=类名" test` / `mvn "-Dtest=类名#方法" test` |
+| 提交前检查 | 运行测试 → 格式化 → 检查注释 → 验证 commit 格式 → 清除调试代码 |
 
-```bash
-# IntelliJ IDEA 快捷键
-# Mac: Cmd + Shift + L (触发代码格式化)
-# Windows/Linux: Ctrl + Shift + L
-
-# 或通过菜单：Code → Reformat Code
-```
-
-### Q2: 如何检查单元测试覆盖率？
-
-```bash
-mvn clean test jacoco:report
-# 查看 target/site/jacoco/index.html
-```
-
-### Q3: 如何本地运行完整测试套件？
-
-```bash
-# 运行所有测试
-mvn clean test
-
-# 运行特定测试类
-mvn "-Dtest=VoucherOrderServiceImplTest" test
-
-# 运行特定测试方法
-mvn "-Dtest=VoucherOrderServiceImplTest#testSeckillVoucher" test
-```
-
-### Q4: 代码提交前需要做什么检查？
-
-1. 本地运行所有测试：`mvn clean test`
-2. 代码格式化：IDE 中执行格式化
-3. 检查拼写和注释
-4. 验证 commit message 格式
-5. 确保没有遗留的调试代码
+详见 [FAQ.md](FAQ.md)
