@@ -1,208 +1,287 @@
 <template>
-  <div class="shop-detail" v-if="shop">
-    <!-- 商户信息 -->
-    <el-card class="shop-info-card">
-      <div class="shop-header">
-        <div class="shop-image">
-          <el-icon :size="64"><Service /></el-icon>
-        </div>
-        <div class="shop-meta">
-          <h1>{{ shop.name }}</h1>
-          <div class="rating">
-            <el-rate v-model="shop.score" disabled show-score />
-            <span class="price">¥{{ shop.avgPrice }}/人</span>
-          </div>
-          <p class="address">
-            <el-icon><Location /></el-icon>
-            {{ shop.address }}
-          </p>
-          <p class="hours" v-if="shop.openHours">
-            <el-icon><Clock /></el-icon>
-            营业时间：{{ shop.openHours }}
-          </p>
-        </div>
-      </div>
-    </el-card>
+  <div class="page-shell">
+    <!-- 加载中 -->
+    <div v-if="loading" class="page-container">
+      <section class="section-block" style="padding: 28px;">
+        <el-skeleton :rows="5" animated />
+      </section>
+    </div>
 
-    <!-- 套餐列表 -->
-    <el-card class="section-card" v-if="combos.length > 0">
-      <template #header>
-        <div class="card-header">
-          <span>优惠套餐</span>
+    <!-- 加载失败 -->
+    <div v-else-if="error" class="page-container">
+      <section class="section-block" style="padding: 28px;">
+        <el-empty description="加载失败，请稍后重试">
+          <el-button type="primary" @click="fetchDetail">重新加载</el-button>
+        </el-empty>
+      </section>
+    </div>
+
+    <!-- 商户详情 -->
+    <div v-else-if="shop" class="page-container shop-detail-page">
+      <section class="hero-card section-block">
+        <div class="hero-media media-placeholder">
+          <img v-if="coverImage" :src="coverImage" :alt="shop.name">
+          <el-icon v-else :size="58"><Service /></el-icon>
         </div>
-      </template>
-      <div class="combo-list">
-        <div v-for="combo in combos" :key="combo.id" class="combo-item">
-          <div class="combo-info">
-            <h4>{{ combo.title }}</h4>
-            <p class="combo-desc">{{ combo.subTitle }}</p>
-            <div class="combo-price">
-              <span class="current-price">¥{{ (combo.price / 100).toFixed(2) }}</span>
-              <span class="original-price">¥{{ (combo.originalPrice / 100).toFixed(2) }}</span>
-              <el-tag type="danger" size="small">省{{ ((combo.originalPrice - combo.price) / 100).toFixed(2) }}元</el-tag>
-            </div>
-            <p class="combo-sales">已售{{ combo.sales }}份</p>
+
+        <div class="hero-content">
+          <span class="eyebrow">商户详情</span>
+          <h1>{{ shop.name }}</h1>
+          <div class="meta-row">
+            <el-rate :model-value="shop.score" disabled show-score />
+            <span class="price-badge">¥{{ shop.avgPrice || 0 }}/人</span>
           </div>
-          <el-button type="primary" @click="buyCombo(combo)">立即购买</el-button>
+          <p class="meta-item">
+            <el-icon><Location /></el-icon>
+            <span>{{ shop.address || '暂无地址信息' }}</span>
+          </p>
+          <p v-if="shop.openHours" class="meta-item">
+            <el-icon><Clock /></el-icon>
+            <span>营业时间：{{ shop.openHours }}</span>
+          </p>
         </div>
-      </div>
-    </el-card>
+      </section>
+
+      <section v-if="combos.length > 0" class="combo-card section-block">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">优惠套餐</h2>
+            <p class="section-subtitle">直接展示当前商户可购买的套餐信息与优惠力度。</p>
+          </div>
+        </div>
+
+        <div class="combo-list">
+          <article v-for="combo in combos" :key="combo.id" class="combo-item">
+            <div class="combo-main">
+              <h3>{{ combo.title }}</h3>
+              <p class="combo-desc">{{ combo.subTitle }}</p>
+              <div class="combo-meta">
+                <span class="current-price">¥{{ (combo.price / 100).toFixed(2) }}</span>
+                <span class="original-price">¥{{ (combo.originalPrice / 100).toFixed(2) }}</span>
+                <el-tag type="danger" size="small">
+                  省 ¥{{ ((combo.originalPrice - combo.price) / 100).toFixed(2) }}
+                </el-tag>
+              </div>
+              <p class="combo-sales">已售 {{ combo.sales }} 份</p>
+            </div>
+
+            <el-button type="primary" size="large" @click="buyCombo(combo)">立即购买</el-button>
+          </article>
+        </div>
+      </section>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+/**
+ * 商户详情组件
+ * 展示商户基本信息和可购买套餐
+ *
+ * @author ethan
+ * @date 2026-06-21
+ */
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getShopById } from '../api/shop'
-import { getCombosByShop } from '../api/combo'
-import { useUserStore } from '../stores/user'
 import { ElMessage } from 'element-plus'
-import { Service, Location, Clock } from '@element-plus/icons-vue'
+import { Clock, Location, Service } from '@element-plus/icons-vue'
+import { getCombosByShop } from '../api/combo'
+import { getShopById } from '../api/shop'
+import { useUserStore } from '../stores/user'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
-
 const shop = ref(null)
 const combos = ref([])
+const loading = ref(false)
+const error = ref(false)
 
+const coverImage = computed(() => {
+  if (!shop.value?.images) {
+    return ''
+  }
+  return shop.value.images.split(',')[0] || ''
+})
+
+/**
+ * 购买套餐
+ */
 const buyCombo = (combo) => {
   if (!userStore.token) {
     ElMessage.warning('请先登录')
     router.push('/login')
     return
   }
+
   router.push(`/order/confirm?type=2&bizId=${combo.id}&shopId=${shop.value.id}`)
 }
 
-onMounted(async () => {
-  const shopId = route.params.id
+/**
+ * 加载商户和套餐详情
+ */
+const fetchDetail = async () => {
+  loading.value = true
+  error.value = false
 
-  // 获取商户详情
-  const shopRes = await getShopById(shopId)
-  if (shopRes.success) {
-    shop.value = shopRes.data
-  }
+  try {
+    const shopId = route.params.id
+    const shopRes = await getShopById(shopId)
+    if (shopRes.success) {
+      shop.value = shopRes.data
+    } else {
+      error.value = true
+      return
+    }
 
-  // 获取套餐列表
-  const comboRes = await getCombosByShop(shopId)
-  if (comboRes.success) {
-    combos.value = comboRes.data
+    const comboRes = await getCombosByShop(shopId)
+    if (comboRes.success) {
+      combos.value = comboRes.data || []
+    }
+  } catch (err) {
+    console.error('加载商户详情失败:', err)
+    error.value = true
+  } finally {
+    loading.value = false
   }
+}
+
+onMounted(() => {
+  fetchDetail()
 })
 </script>
 
 <style scoped>
-.shop-detail {
-  padding: 20px 0;
-}
-
-.shop-info-card {
-  margin-bottom: 20px;
-}
-
-.shop-header {
+.shop-detail-page {
   display: flex;
-  gap: 20px;
+  flex-direction: column;
+  gap: 22px;
 }
 
-.shop-image {
-  width: 200px;
-  height: 200px;
-  background: #f0f0f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
+.hero-card {
+  display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 28px;
+  padding: 30px;
 }
 
-.shop-meta {
-  flex: 1;
+.hero-media {
+  min-height: 320px;
+  border-radius: 28px;
+  overflow: hidden;
 }
 
-.shop-meta h1 {
-  font-size: 24px;
-  margin-bottom: 10px;
+.hero-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.rating {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 10px;
+.hero-content h1 {
+  margin: 18px 0 16px;
+  font-size: 38px;
+  line-height: 1.2;
 }
 
-.price {
-  color: #f56c6c;
-  font-weight: bold;
-  font-size: 18px;
-}
-
-.address, .hours {
-  color: #666;
-  margin-bottom: 8px;
+.meta-row {
   display: flex;
   align-items: center;
-  gap: 5px;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
-.section-card {
-  margin-bottom: 20px;
+.price-badge {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(229, 72, 77, 0.1);
+  color: var(--danger-color);
+  font-weight: 700;
 }
 
-.card-header {
-  font-size: 18px;
-  font-weight: bold;
+.meta-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--text-color-secondary);
+  line-height: 1.7;
+}
+
+.combo-card {
+  padding: 28px;
+}
+
+.combo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .combo-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 15px 0;
-  border-bottom: 1px solid #eee;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, 0.84);
 }
 
-.combo-item:last-child {
-  border-bottom: none;
-}
-
-.combo-info {
-  flex: 1;
-}
-
-.combo-info h4 {
-  font-size: 16px;
-  margin-bottom: 8px;
+.combo-main h3 {
+  margin: 0 0 10px;
+  font-size: 22px;
 }
 
 .combo-desc {
-  color: #999;
-  font-size: 14px;
-  margin-bottom: 8px;
+  margin: 0 0 12px;
+  color: var(--text-color-secondary);
 }
 
-.combo-price {
+.combo-meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .current-price {
-  color: #f56c6c;
-  font-size: 20px;
-  font-weight: bold;
+  color: var(--danger-color);
+  font-size: 26px;
+  font-weight: 800;
 }
 
 .original-price {
-  color: #999;
+  color: var(--text-color-muted);
   text-decoration: line-through;
-  font-size: 14px;
 }
 
 .combo-sales {
-  color: #999;
-  font-size: 12px;
+  margin: 0;
+  color: var(--text-color-secondary);
+}
+
+@media (max-width: 768px) {
+  .hero-card,
+  .combo-item {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hero-card,
+  .combo-card {
+    padding: 22px;
+  }
+
+  .hero-content h1 {
+    font-size: 30px;
+  }
+
+  .hero-media {
+    min-height: 240px;
+  }
 }
 </style>
