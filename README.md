@@ -400,14 +400,12 @@ allure serve reports/allure-results
 
 ### 面试 / 讲解材料
 
-- `Kafka秒杀链路面试准备文档.md`
-- `Kafka秒杀链路面试题.md`
-- `秒杀并发与Kafka面试话术-1_3_8分钟版.md`
-- `项目技术问答.md`
-- `项目技术问答详解.md`
-- `tests/自动化测试平台*.md`
+已单独整理到 `interview/qa/` 目录：
 
-后续如果继续整理仓库，建议把这些文档统一迁移到 `docs/` 下分目录管理。
+- `interview/qa/项目技术问答.md`
+- `interview/qa/项目面试资料总合并版.pdf`
+
+后续如果补充新的面试问答、讲解稿或 PDF 材料，建议继续统一放在这个目录下集中管理。
 
 ## 后续优化建议
 
