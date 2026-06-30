@@ -18,11 +18,25 @@
         </el-tabs>
 
         <div class="order-list">
-          <div v-if="orders.length === 0" class="empty-state">
+          <!-- 加载中 -->
+          <div v-if="loading">
+            <el-skeleton :rows="3" animated />
+          </div>
+
+          <!-- 加载失败 -->
+          <div v-else-if="error" class="error-state">
+            <el-empty description="加载失败，请稍后重试">
+              <el-button type="primary" @click="fetchOrders">重新加载</el-button>
+            </el-empty>
+          </div>
+
+          <!-- 空数据 -->
+          <div v-else-if="orders.length === 0" class="empty-state">
             <el-empty description="当前没有订单记录" />
           </div>
 
-          <article v-for="order in orders" :key="order.id" class="order-item">
+          <!-- 订单列表 -->
+          <article v-for="order in orders" v-else :key="order.id" class="order-item">
             <div class="order-top">
               <div>
                 <p class="order-label">订单号</p>
@@ -76,6 +90,8 @@ import { cancelOrder, getMyOrders, payOrder } from '../api/order'
 
 const activeStatus = ref('all')
 const orders = ref([])
+const loading = ref(false)
+const error = ref(false)
 
 /**
  * 获取订单状态标签类型
@@ -114,10 +130,21 @@ const handleTabClick = () => {
  * 获取当前用户订单
  */
 const fetchOrders = async () => {
-  const status = activeStatus.value === 'all' ? undefined : Number(activeStatus.value)
-  const res = await getMyOrders(status)
-  if (res.success) {
-    orders.value = res.data || []
+  loading.value = true
+  error.value = false
+
+  try {
+    const status = activeStatus.value === 'all' ? undefined : Number(activeStatus.value)
+    const res = await getMyOrders(status)
+    if (res.success) {
+      orders.value = res.data || []
+    }
+  } catch (err) {
+    console.error('加载订单列表失败:', err)
+    error.value = true
+    orders.value = []
+  } finally {
+    loading.value = false
   }
 }
 
