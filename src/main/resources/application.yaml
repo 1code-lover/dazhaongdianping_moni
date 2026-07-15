@@ -97,6 +97,8 @@ logging:
     com.hmdp: info
   pattern:
     dateformat: mm:ss.SSS
+  file:
+    name: app.log
 
 # AI配置
 ai:

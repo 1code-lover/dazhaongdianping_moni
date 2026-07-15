@@ -23,6 +23,10 @@ public class ShopApply implements Serializable {
     private Long id;
     
     private Long userId;
+    
+    /** 审核通过后创建的店铺ID */
+    private Long shopId;
+    
     private String shopName;
     private Long shopTypeId;
     private String shopImg;

@@ -1,4 +1,9 @@
+/**
+ * 路由配置
+ * 定义页面路由和路由守卫
+ */
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '../stores/user'
 
 const routes = [
   {
@@ -46,10 +51,10 @@ const router = createRouter({
   routes
 })
 
-// 路由守卫
+// 路由守卫：检查登录态
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token')
-  if (to.meta.requiresAuth && !token) {
+  const userStore = useUserStore()
+  if (to.meta.requiresAuth && !userStore.token) {
     next('/login')
   } else {
     next()
