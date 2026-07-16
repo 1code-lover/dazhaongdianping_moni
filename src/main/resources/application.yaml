@@ -10,11 +10,15 @@ spring:
     driver-class-name: com.mysql.jdbc.Driver
     url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/hmdp?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:password}
+    password: ${DB_PASSWORD:}
+  servlet:
+    multipart:
+      max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
+      max-request-size: ${UPLOAD_MAX_REQUEST_SIZE:6MB}
   redis:
     host: ${REDIS_HOST:127.0.0.1}
     port: ${REDIS_PORT:6379}
-    password: ${REDIS_PASSWORD:123456}
+    password: ${REDIS_PASSWORD:}
     lettuce:
       pool:
         max-active: 10
@@ -47,6 +51,13 @@ spring:
       enable-auto-commit: false
 
 app:
+  security:
+    # 逗号分隔的管理员用户 ID；空配置时后台接口默认拒绝访问
+    admin-user-ids: ${ADMIN_USER_IDS:}
+  upload:
+    dir: ${UPLOAD_DIR:./uploads/imgs/}
+    max-size-mb: ${UPLOAD_MAX_SIZE_MB:5}
+    allowed-extensions: jpg,jpeg,png,webp
   kafka:
     relay:
       consumer-name: ${KAFKA_RELAY_CONSUMER_NAME:}

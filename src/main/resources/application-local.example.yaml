@@ -6,7 +6,7 @@ spring:
   redis:
     host: 127.0.0.1
     port: 6379
-    password: 123456
+    password: your-redis-password
   kafka:
     bootstrap-servers: 127.0.0.1:9092
     template:
@@ -16,3 +16,12 @@ spring:
 
 server:
   port: 8081
+
+app:
+  security:
+    # 通过 ADMIN_USER_IDS 配置逗号分隔的管理员用户 ID；空值会默认拒绝后台访问
+    admin-user-ids: ${ADMIN_USER_IDS:}
+  upload:
+    dir: ${UPLOAD_DIR:./uploads/imgs/}
+    max-size-mb: ${UPLOAD_MAX_SIZE_MB:5}
+    allowed-extensions: jpg,jpeg,png,webp
