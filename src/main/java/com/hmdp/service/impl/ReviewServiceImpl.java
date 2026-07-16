@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.dto.ReviewDTO;
 import com.hmdp.dto.ReviewReplyDTO;
 import com.hmdp.dto.Result;
+import com.hmdp.utils.PageUtils;
 import com.hmdp.entity.Order;
 import com.hmdp.entity.Review;
 import com.hmdp.entity.ShopApply;
@@ -117,7 +118,7 @@ public class ReviewServiceImpl extends ServiceImpl<ReviewMapper, Review> impleme
                 .eq(Review::getUserId, userId)
                 .eq(Review::getIsDeleted, 0)
                 .orderByDesc(Review::getCreateTime)
-                .page(new Page<>(current, size));
+                .page(new Page<>(PageUtils.normalizePageNumber(current), PageUtils.normalizePageSize(size)));
         return Result.ok(page.getRecords());
     }
 
@@ -128,7 +129,7 @@ public class ReviewServiceImpl extends ServiceImpl<ReviewMapper, Review> impleme
                 .eq(Review::getIsDeleted, 0)
                 .eq(Review::getStatus, 1)
                 .orderByDesc(Review::getCreateTime)
-                .page(new Page<>(current, size));
+                .page(new Page<>(PageUtils.normalizePageNumber(current), PageUtils.normalizePageSize(size)));
         return Result.ok(page.getRecords());
     }
 
@@ -144,7 +145,7 @@ public class ReviewServiceImpl extends ServiceImpl<ReviewMapper, Review> impleme
                 .eq(Review::getShopId, shopId)
                 .eq(Review::getIsDeleted, 0)
                 .orderByDesc(Review::getCreateTime)
-                .page(new Page<>(current, size));
+                .page(new Page<>(PageUtils.normalizePageNumber(current), PageUtils.normalizePageSize(size)));
         return Result.ok(page.getRecords());
     }
 

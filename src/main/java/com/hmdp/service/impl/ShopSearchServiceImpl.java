@@ -2,6 +2,7 @@ package com.hmdp.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.hmdp.dto.Result;
+import com.hmdp.utils.PageUtils;
 import com.hmdp.entity.Shop;
 import com.hmdp.entity.ShopDocument;
 import com.hmdp.mapper.ShopDocumentRepository;
@@ -44,7 +45,7 @@ public class ShopSearchServiceImpl implements IShopSearchService {
                         .should(matchQuery("name", keyword).boost(2.0f))
                         .should(matchQuery("address", keyword))
                         .should(matchQuery("area", keyword)))
-                .withPageable(PageRequest.of(page - 1, size));
+                .withPageable(PageRequest.of(PageUtils.toZeroBasedPage(page), PageUtils.normalizePageSize(size)));
         
         if (x != null && y != null) {
             queryBuilder.withSort(SortBuilders.geoDistanceSort("location", new org.elasticsearch.common.geo.GeoPoint(y, x))

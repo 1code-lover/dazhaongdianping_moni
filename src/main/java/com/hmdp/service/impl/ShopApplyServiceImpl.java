@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.dto.Result;
+import com.hmdp.utils.PageUtils;
 import com.hmdp.entity.Shop;
 import com.hmdp.entity.ShopApply;
 import com.hmdp.entity.ShopType;
@@ -112,7 +113,7 @@ public class ShopApplyServiceImpl extends ServiceImpl<ShopApplyMapper, ShopApply
                 .eq(status != null, ShopApply::getStatus, status)
                 .eq(ShopApply::getIsDeleted, 0)
                 .orderByDesc(ShopApply::getCreateTime)
-                .page(new Page<>(current, size));
+                .page(new Page<>(PageUtils.normalizePageNumber(current), PageUtils.normalizePageSize(size)));
         
         return Result.ok(page.getRecords());
     }

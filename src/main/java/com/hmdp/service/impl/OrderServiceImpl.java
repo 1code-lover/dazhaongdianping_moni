@@ -3,6 +3,7 @@ package com.hmdp.service.impl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.dto.Result;
+import com.hmdp.utils.PageUtils;
 import com.hmdp.entity.Combo;
 import com.hmdp.entity.Order;
 import com.hmdp.entity.VerifyRecord;
@@ -186,7 +187,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .eq(Order::getIsDeleted, 0)
                 .eq(status != null, Order::getStatus, status)
                 .orderByDesc(Order::getCreateTime)
-                .page(new Page<>(current, size));
+                .page(new Page<>(PageUtils.normalizePageNumber(current), PageUtils.normalizePageSize(size)));
         
         return Result.ok(page.getRecords());
     }

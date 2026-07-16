@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.dto.Result;
+import com.hmdp.utils.PageUtils;
 import com.hmdp.entity.Combo;
 import com.hmdp.mapper.ComboMapper;
 import com.hmdp.service.IComboService;
@@ -123,7 +124,7 @@ public class ComboServiceImpl extends ServiceImpl<ComboMapper, Combo> implements
                 .eq(Combo::getStatus, 1)
                 .eq(Combo::getIsDeleted, 0)
                 .orderByDesc(Combo::getCreateTime)
-                .page(new Page<>(current, size));
+                .page(new Page<>(PageUtils.normalizePageNumber(current), PageUtils.normalizePageSize(size)));
         return Result.ok(page.getRecords());
     }
 

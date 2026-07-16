@@ -3,6 +3,7 @@ package com.hmdp.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hmdp.dto.Result;
+import com.hmdp.utils.PageUtils;
 import com.hmdp.entity.Order;
 import com.hmdp.entity.VerifyRecord;
 import com.hmdp.mapper.VerifyRecordMapper;
@@ -63,7 +64,7 @@ public class VerifyServiceImpl implements IVerifyService {
      */
     @Override
     public Result queryVerifyRecords(Long shopId, Integer current, Integer size) {
-        Page<VerifyRecord> page = new Page<>(current, size);
+        Page<VerifyRecord> page = new Page<>(PageUtils.normalizePageNumber(current), PageUtils.normalizePageSize(size));
         LambdaQueryWrapper<VerifyRecord> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(VerifyRecord::getShopId, shopId)
                .orderByDesc(VerifyRecord::getVerifyTime);
