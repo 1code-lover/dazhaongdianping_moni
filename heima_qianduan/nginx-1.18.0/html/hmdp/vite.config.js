@@ -14,6 +14,25 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: 'dist'
+    outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) {
+            return undefined
+          }
+          if (id.includes('element-plus')) {
+            return 'element-plus'
+          }
+          if (id.includes('vue') || id.includes('pinia')) {
+            return 'vue-vendor'
+          }
+          if (id.includes('axios')) {
+            return 'http-vendor'
+          }
+          return 'vendor'
+        }
+      }
+    }
   }
 })
