@@ -8,6 +8,7 @@ import com.hmdp.service.impl.ShopServiceImpl;
 import com.hmdp.utils.CacheClient;
 import com.hmdp.utils.RedisIdWorker;
 import com.hmdp.utils.UserHolder;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.geo.Point;
@@ -28,6 +29,14 @@ import java.util.stream.Collectors;
 import static com.hmdp.utils.RedisConstants.CACHE_SHOP_KEY;
 import static com.hmdp.utils.RedisConstants.SHOP_GEO_KEY;
 
+/**
+ * 数据预热与性能基准工具集合。
+ * 依赖完整本地环境，仅通过 manual-test Profile 显式执行。
+ *
+ * @author ethan
+ * @date 2026-07-16
+ */
+@Tag("manual")
 @SpringBootTest
 class HmDianPingApplicationTests {
 

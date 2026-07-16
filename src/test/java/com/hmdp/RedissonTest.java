@@ -2,6 +2,7 @@ package com.hmdp;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -10,7 +11,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import javax.annotation.Resource;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Redisson 可重入锁集成测试。
+ * 依赖真实 Redis，仅通过 integration-test Profile 显式执行。
+ *
+ * @author ethan
+ * @date 2026-07-16
+ */
 @Slf4j
+@Tag("integration")
 @SpringBootTest
 class RedissonTest {
 

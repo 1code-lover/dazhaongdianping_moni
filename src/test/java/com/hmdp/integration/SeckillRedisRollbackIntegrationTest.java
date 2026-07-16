@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * 需本地 Redis 与主工程配置一致（见 application.yaml），且会启动完整 Spring 上下文（含 MySQL/Kafka 等）。
- * 运行：{@code mvn test -Dtest=SeckillRedisRollbackIntegrationTest}
+ * 运行：{@code mvn -Pintegration-test -Dtest=SeckillRedisRollbackIntegrationTest test}
  */
 @SpringBootTest
 @Tag("integration")

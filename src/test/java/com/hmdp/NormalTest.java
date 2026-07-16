@@ -1,7 +1,15 @@
 package com.hmdp;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+/**
+ * 位图算法人工性能对比工具。
+ *
+ * @author ethan
+ * @date 2026-07-16
+ */
+@Tag("manual")
 public class NormalTest {
 
     @Test

@@ -7,6 +7,7 @@ import cn.hutool.core.util.RandomUtil;
 import com.hmdp.dto.UserDTO;
 import com.hmdp.entity.User;
 import com.hmdp.service.IUserService;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -28,6 +29,14 @@ import static com.hmdp.utils.RedisConstants.LOGIN_USER_KEY;
 import static com.hmdp.utils.RedisConstants.LOGIN_USER_TTL;
 import static com.hmdp.utils.SystemConstants.USER_NICK_NAME_PREFIX;
 
+/**
+ * 压测登录令牌批量生成工具。
+ * 仅通过 manual-test Profile 显式执行，避免默认测试写入数据库和 Redis。
+ *
+ * @author ethan
+ * @date 2026-07-16
+ */
+@Tag("manual")
 @SpringBootTest
 public class BatchTokenGeneratorTest {
 

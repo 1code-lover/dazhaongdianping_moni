@@ -15,6 +15,8 @@
     <description>Demo project for Spring Boot</description>
     <properties>
         <java.version>1.8</java.version>
+        <test.groups></test.groups>
+        <test.excluded-groups>integration,manual</test.excluded-groups>
     </properties>
     <dependencies>
         <dependency>
@@ -162,7 +164,32 @@
                     </jvmArguments>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <groups>${test.groups}</groups>
+                    <excludedGroups>${test.excluded-groups}</excludedGroups>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>integration-test</id>
+            <properties>
+                <test.groups>integration</test.groups>
+                <test.excluded-groups>manual</test.excluded-groups>
+            </properties>
+        </profile>
+        <profile>
+            <id>manual-test</id>
+            <properties>
+                <test.groups>manual</test.groups>
+                <test.excluded-groups>integration</test.excluded-groups>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>
