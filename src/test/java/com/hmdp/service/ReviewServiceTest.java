@@ -57,7 +57,7 @@ class ReviewServiceTest {
         Result result = reviewService.submitReview(dto);
 
         // then
-        assertTrue(result.isSuccess());
+        assertTrue(result.getSuccess());
         assertNotNull(result.getData());
     }
 
@@ -77,7 +77,7 @@ class ReviewServiceTest {
         Result result = reviewService.submitReview(dto);
 
         // then
-        assertFalse(result.isSuccess());
+        assertFalse(result.getSuccess());
         assertEquals("评分范围为1-5", result.getErrorMsg());
     }
 
@@ -97,7 +97,7 @@ class ReviewServiceTest {
         Result result = reviewService.submitReview(dto);
 
         // then
-        assertFalse(result.isSuccess());
+        assertFalse(result.getSuccess());
         assertEquals("评价内容不超过500字", result.getErrorMsg());
     }
 
@@ -113,7 +113,7 @@ class ReviewServiceTest {
         Result result = reviewService.getReviewById(reviewId);
 
         // then
-        assertTrue(result.isSuccess());
+        assertTrue(result.getSuccess());
         assertNotNull(result.getData());
     }
 
@@ -129,7 +129,7 @@ class ReviewServiceTest {
         Result result = reviewService.getReviewById(reviewId);
 
         // then
-        assertFalse(result.isSuccess());
+        assertFalse(result.getSuccess());
         assertEquals("评价不存在", result.getErrorMsg());
     }
 
@@ -147,7 +147,7 @@ class ReviewServiceTest {
         Result result = reviewService.replyReview(dto);
 
         // then
-        assertTrue(result.isSuccess());
+        assertTrue(result.getSuccess());
     }
 
     /**
@@ -164,7 +164,7 @@ class ReviewServiceTest {
         Result result = reviewService.replyReview(dto);
 
         // then
-        assertFalse(result.isSuccess());
+        assertFalse(result.getSuccess());
         assertEquals("回复内容不超过200字", result.getErrorMsg());
     }
 }
