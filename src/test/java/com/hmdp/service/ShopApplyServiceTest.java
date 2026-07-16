@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,6 +41,8 @@ class ShopApplyServiceTest {
         UserDTO user = new UserDTO();
         user.setId(1L);
         UserHolder.saveUser(user);
+        // Mockito 无法自动注入 MyBatis-Plus ServiceImpl 的继承字段
+        ReflectionTestUtils.setField(shopApplyService, "baseMapper", shopApplyMapper);
     }
     
     @AfterEach
