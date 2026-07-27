@@ -75,6 +75,35 @@ flowchart TD
     G --> H["返回下单结果"]
 ```
 
+### 页面展示预留区
+
+为了方便后续把项目首页做得更完整，仓库已预留截图目录：
+
+- `docs/screenshots/`
+
+建议你后续把截图按下面这些文件名放进去：
+
+| 页面 | 建议文件名 | 说明 |
+| --- | --- | --- |
+| 首页 | `docs/screenshots/home.png` | 展示平台首页、分类和推荐商户 |
+| 登录页 | `docs/screenshots/login.png` | 展示验证码登录流程 |
+| 商户列表页 | `docs/screenshots/shop-list.png` | 展示商户列表、搜索和信息卡片 |
+| 商户详情页 | `docs/screenshots/shop-detail.png` | 展示评分、地址、营业时间、套餐 |
+| 用户中心页 | `docs/screenshots/user-center.png` | 展示用户信息和最近订单预览 |
+| 订单页 | `docs/screenshots/order-list.png` | 展示订单状态、金额、核销码 |
+
+当你把截图补进来后，可以把这一段替换成正式图片展示区，例如：
+
+```md
+## 页面展示
+
+### 首页
+![首页](docs/screenshots/home.png)
+
+### 商户详情页
+![商户详情页](docs/screenshots/shop-detail.png)
+```
+
 ## 技术栈
 
 ### 后端
