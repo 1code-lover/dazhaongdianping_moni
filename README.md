@@ -436,6 +436,12 @@ docker run -d \
   elasticsearch:7.17.25
 ```
 
+如果容器已经创建过，也可以直接启动已有容器：
+
+```bash
+docker start elasticsearch
+```
+
 ### 依赖服务启动顺序
 
 推荐顺序如下：
@@ -510,7 +516,26 @@ curl http://127.0.0.1:8081/actuator/health
 - `redis.status = UP`
 - `elasticsearch.status = UP`
 
-### 3. 常用访问地址
+### 3. 验证搜索链路
+
+先执行一次同步：
+
+```bash
+curl -X POST http://127.0.0.1:8081/shop/sync
+```
+
+再执行搜索：
+
+```bash
+curl -G http://127.0.0.1:8081/shop/search \
+  --data-urlencode "keyword=103" \
+  --data-urlencode "current=1" \
+  --data-urlencode "size=5"
+```
+
+如果返回类似 `103茶餐厅` 的结果，说明搜索链路已经打通。
+
+### 4. 常用访问地址
 
 | 模块 | 地址 | 说明 |
 | --- | --- | --- |
@@ -519,7 +544,7 @@ curl http://127.0.0.1:8081/actuator/health
 | Prometheus 指标 | `http://127.0.0.1:8081/actuator/prometheus` | 查看监控指标 |
 | Elasticsearch | `http://127.0.0.1:9200` | 查看 ES 是否启动 |
 
-### 4. 首次联调建议
+### 5. 首次联调建议
 
 建议优先验证下面几个接口：
 
@@ -529,7 +554,7 @@ curl http://127.0.0.1:8081/actuator/health
 - `GET /shop/of/type`：按类型分页查询商户
 - `POST /voucher-order/seckill/{id}`：测试秒杀主链路
 
-### 5. 日志查看
+### 6. 日志查看
 
 项目日志默认会输出到控制台，同时当前配置里也写入：
 

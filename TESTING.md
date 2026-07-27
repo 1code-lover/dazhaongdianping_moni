@@ -96,7 +96,7 @@ mvn clean test jacoco:report
 | MySQL | UP | 本地 brew services 启动 |
 | Redis | UP | 本地 brew services 启动 |
 | Kafka | UP | 本地 brew services 启动 |
-| Elasticsearch | 可选 / 当前未稳定接入 | 不影响大部分页面展示 |
+| Elasticsearch | UP | 已通过 Docker 本地启动并完成接口验证 |
 | 前端 | Vite 本地运行 | `http://127.0.0.1:3000` |
 | 后端 | Spring Boot 本地运行 | `http://127.0.0.1:8081` |
 
@@ -146,6 +146,31 @@ mvn clean test jacoco:report
   - 状态
   - 核销码
 - 用户中心页已增加最近订单预览
+
+#### 5. 搜索链路验证
+
+- Docker Desktop 已恢复并成功启动 `elasticsearch:7.17.25`
+- `http://127.0.0.1:9200` 可正常访问
+- `/actuator/health` 已恢复为整体 `UP`
+- 已执行一次商户全量同步：
+
+```bash
+curl -X POST http://127.0.0.1:8081/shop/sync
+```
+
+- 已验证搜索接口返回有效结果：
+
+```bash
+curl -G http://127.0.0.1:8081/shop/search \
+  --data-urlencode "keyword=103" \
+  --data-urlencode "current=1" \
+  --data-urlencode "size=5"
+```
+
+验证结果：
+
+- 能正确返回 `103茶餐厅`
+- 说明 Elasticsearch 接入、索引同步、搜索接口三者链路可用
 
 ### 本次发现的问题
 
@@ -221,9 +246,9 @@ JAVA_HOME=$(/usr/libexec/java_home -v 21) mvn -Dtest=ReviewServiceTest test
 
 ### 当前仍需注意的事项
 
-- Elasticsearch 当前不是页面展示必需项，但若要完整验证搜索能力，仍建议单独启动
 - 订单页与用户中心当前依赖本地测试账号与测试订单数据展示
 - 若要继续做接口自动化与回归测试，建议补充一组稳定的测试夹具数据
+- Elasticsearch 当前已可用，但若 Docker Desktop 未启动，健康检查会再次降为 `DOWN`
 
 ### 结论
 
@@ -238,4 +263,4 @@ JAVA_HOME=$(/usr/libexec/java_home -v 21) mvn -Dtest=ReviewServiceTest test
 
 1. 补一份正式的接口测试用例清单
 2. 为订单、搜索、秒杀准备独立测试数据
-3. 在 Elasticsearch 稳定接入后补一次搜索链路回归
+3. 继续补充搜索关键字、高亮、地理位置排序等更细粒度回归用例
