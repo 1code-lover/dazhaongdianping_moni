@@ -162,37 +162,39 @@ mvn clean test jacoco:report
 - 已修复 `ReviewServiceTest` 中的断言写法
 - 已将 `scripts/start-app.sh` 调整为默认跳过测试编译，提升本地联调稳定性
 
-#### 问题 1.1：`ReviewServiceTest` 现在能编译，但执行仍失败
+#### 问题 1.1：`ReviewServiceTest` 已从“无法运行”修复为“可稳定通过”
 
-最近执行命令：
+最近回归命令：
 
 ```bash
 JAVA_HOME=$(/usr/libexec/java_home -v 21) mvn -Dtest=ReviewServiceTest test
 ```
 
-实际结果：
+最终结果：
 
-- 测试已不再因为 `Result#isSuccess()` 报编译错误
-- 但执行阶段仍失败
+- `Tests run: 7, Failures: 0, Errors: 0, Skipped: 0`
+- `BUILD SUCCESS`
 
-失败原因：
+修复过程中的关键问题：
 
-- 数据库缺少 `tb_review` 表
-- 测试中依赖的订单 / 评价夹具数据与当前数据库状态不匹配
+- `Result#isSuccess()` 断言与当前 `Result#getSuccess()` 不一致
+- 缺少 `tb_review` 表与 `tb_shop` 扩展字段
+- `tb_shop_apply` 表结构缺少代码所依赖的 `shop_id`
+- 测试夹具订单重复使用同一个 `verify_code`，触发唯一索引冲突
+- JDK 21 下，Surefire 测试 JVM 缺少 MyBatis-Plus 所需的 `--add-opens`
 
-表现为：
+已采取的修复动作：
 
-- 部分用例报 `Table 'hmdp.tb_review' doesn't exist`
-- 部分用例断言预期为“评分范围错误 / 内容长度错误”，实际先命中了“订单不存在”
+- 修正测试断言
+- 在测试中补齐评价表及依赖夹具数据
+- 为测试订单生成唯一核销码
+- 为 `maven-surefire-plugin` 增加与运行时一致的 `--add-opens`
 
 结论：
 
-- 当前 `ReviewServiceTest` 适合作为“待补齐测试夹具”的集成测试草稿
-- 不适合继续作为本地启动前必须通过的测试
-- 若后续要恢复这组测试，建议先补齐：
-  1. `tb_review` 建表脚本
-  2. 对应订单测试数据
-  3. 独立测试数据库或测试夹具初始化逻辑
+- 当前 `ReviewServiceTest` 已具备稳定执行条件
+- 这组测试可以作为评价模块回归测试的基础用例继续保留
+- 后续若扩展评价功能，建议沿用“测试自带夹具”的方式补充更多边界场景
 
 #### 问题 2：`TESTING.md` 示例与当前 `Result` 结构不一致
 
