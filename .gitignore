@@ -62,6 +62,7 @@ application-*.local.yml
 # AI / local helper dirs
 .agents/
 .reflexion/
+interview/
 
 # Markdown policy: keep only root docs
 *.md
