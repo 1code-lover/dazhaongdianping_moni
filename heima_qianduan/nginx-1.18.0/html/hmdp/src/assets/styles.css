@@ -8,7 +8,9 @@
 :root {
   --primary-color: #ff6b35;
   --primary-color-dark: #e85a26;
+  --primary-color-soft: rgba(255, 107, 53, 0.14);
   --accent-color: #ffd166;
+  --secondary-accent: #6c7cff;
   --success-color: #2fa36b;
   --warning-color: #f3a712;
   --danger-color: #e5484d;
@@ -20,7 +22,8 @@
   --surface-strong: #ffffff;
   --page-background:
     radial-gradient(circle at top left, rgba(255, 209, 102, 0.28), transparent 28%),
-    radial-gradient(circle at top right, rgba(255, 107, 53, 0.14), transparent 26%),
+    radial-gradient(circle at top right, rgba(255, 107, 53, 0.18), transparent 26%),
+    radial-gradient(circle at 50% 100%, rgba(108, 124, 255, 0.12), transparent 32%),
     linear-gradient(180deg, #fffaf5 0%, #f6f7fb 48%, #eef4ff 100%);
   --shadow-soft: 0 18px 50px rgba(15, 23, 42, 0.08);
   --shadow-hover: 0 24px 60px rgba(15, 23, 42, 0.14);
@@ -45,6 +48,8 @@ body {
   font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
   color: var(--text-color);
   background: var(--page-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -72,6 +77,10 @@ img {
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-soft);
+}
+
+.section-block:hover {
+  box-shadow: 0 22px 55px rgba(15, 23, 42, 0.09);
 }
 
 .section-header {
@@ -105,6 +114,7 @@ img {
   color: var(--primary-color-dark);
   font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .stat-chip {
@@ -171,14 +181,29 @@ img {
   font-weight: 600;
 }
 
+.el-button--primary.is-plain {
+  --el-button-text-color: var(--primary-color-dark);
+  --el-button-bg-color: rgba(255, 107, 53, 0.08);
+  --el-button-border-color: rgba(255, 107, 53, 0.18);
+}
+
 .el-input__wrapper {
   border-radius: 999px;
-  box-shadow: none;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.06) inset;
   min-height: 44px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.16) inset;
 }
 
 .el-input-group__append {
   border-radius: 0 999px 999px 0;
+}
+
+.el-empty {
+  padding: 28px 0;
 }
 
 .el-tabs__item.is-active,

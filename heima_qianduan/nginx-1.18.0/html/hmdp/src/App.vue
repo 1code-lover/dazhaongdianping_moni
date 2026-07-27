@@ -3,12 +3,27 @@
     <el-container class="app-shell">
       <el-header class="app-header">
         <div class="page-container header-content">
-          <div class="brand-block" @click="goHome">
-            <div class="brand-mark">食</div>
-            <div class="brand-copy">
-              <div class="brand-title">本地生活平台</div>
-              <p class="brand-subtitle">吃喝玩乐，一站发现附近好店</p>
+          <div class="brand-cluster">
+            <div class="brand-block" @click="goHome">
+              <div class="brand-mark">食</div>
+              <div class="brand-copy">
+                <div class="brand-title">本地生活平台</div>
+                <p class="brand-subtitle">吃喝玩乐，一站发现附近好店</p>
+              </div>
             </div>
+
+            <nav class="nav-links">
+              <button
+                v-for="item in navItems"
+                :key="item.path"
+                type="button"
+                class="nav-link"
+                :class="{ active: isActive(item.path) }"
+                @click="router.push(item.path)"
+              >
+                {{ item.label }}
+              </button>
+            </nav>
           </div>
 
           <div class="search-panel">
@@ -71,14 +86,21 @@
  * @date 2026-06-21
  */
 import { computed, ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ArrowDown } from '@element-plus/icons-vue'
 import { useUserStore } from './stores/user'
 import './assets/styles.css'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const searchKeyword = ref('')
+const navItems = [
+  { label: '首页', path: '/' },
+  { label: '商户', path: '/shop?typeId=1' },
+  { label: '订单', path: '/order' },
+  { label: '我的', path: '/user' }
+]
 
 // 应用启动时初始化用户态
 onMounted(async () => {
@@ -102,6 +124,16 @@ const goHome = () => {
  */
 const goLogin = () => {
   router.push('/login')
+}
+
+/**
+ * 判断导航是否为当前路由
+ */
+const isActive = (path) => {
+  if (path === '/') {
+    return route.path === '/'
+  }
+  return route.path.startsWith(path.split('?')[0])
 }
 
 /**
@@ -155,9 +187,15 @@ const handleCommand = (command) => {
 
 .header-content {
   display: grid;
-  grid-template-columns: 280px minmax(300px, 1fr) auto;
+  grid-template-columns: minmax(320px, 420px) minmax(260px, 1fr) auto;
   align-items: center;
   gap: 20px;
+}
+
+.brand-cluster {
+  display: flex;
+  align-items: center;
+  gap: 18px;
 }
 
 .brand-block {
@@ -191,6 +229,34 @@ const handleCommand = (command) => {
   margin: 4px 0 0;
   color: var(--text-color-secondary);
   font-size: 12px;
+}
+
+.nav-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.nav-link {
+  border: none;
+  background: transparent;
+  color: var(--text-color-secondary);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: var(--primary-color-dark);
+  background: rgba(255, 107, 53, 0.12);
 }
 
 .search-panel {
@@ -258,6 +324,11 @@ const handleCommand = (command) => {
     gap: 14px;
   }
 
+  .brand-cluster {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .user-panel {
     justify-content: flex-start;
   }
@@ -279,6 +350,11 @@ const handleCommand = (command) => {
 
   .brand-title {
     font-size: 18px;
+  }
+
+  .nav-links {
+    overflow-x: auto;
+    max-width: 100%;
   }
 }
 </style>
