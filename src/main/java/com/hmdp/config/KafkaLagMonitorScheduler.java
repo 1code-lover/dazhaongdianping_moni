@@ -5,6 +5,9 @@ import org.apache.kafka.clients.admin.ListOffsetsResult;
 import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.common.TopicPartition;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
@@ -72,8 +76,33 @@ public class KafkaLagMonitorScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaLagMonitorScheduler.class);
 
-    @Resource
-    private AdminClient kafkaAdminClient;
+    private final AdminClient kafkaAdminClient;
+    private final MeterRegistry meterRegistry;
+    private final AtomicLong totalLagValue = new AtomicLong();
+    private final AtomicLong partitionCountValue = new AtomicLong();
+    private final AtomicLong partitionsWithCommitValue = new AtomicLong();
+    private final AtomicLong lastUpdatedEpochMs = new AtomicLong();
+    private final Counter checkFailureCounter;
+
+    public KafkaLagMonitorScheduler(AdminClient kafkaAdminClient, MeterRegistry meterRegistry) {
+        this.kafkaAdminClient = kafkaAdminClient;
+        this.meterRegistry = meterRegistry;
+        Gauge.builder("benchmark.kafka.lag.total", totalLagValue, AtomicLong::doubleValue)
+                .description("Kafka消费组当前总Lag")
+                .register(meterRegistry);
+        Gauge.builder("benchmark.kafka.lag.partition.count", partitionCountValue, AtomicLong::doubleValue)
+                .description("Kafka Topic分区数")
+                .register(meterRegistry);
+        Gauge.builder("benchmark.kafka.lag.partitions.with.commit", partitionsWithCommitValue, AtomicLong::doubleValue)
+                .description("Kafka已经提交消费位点的分区数")
+                .register(meterRegistry);
+        Gauge.builder("benchmark.kafka.lag.last.updated.epoch.ms", lastUpdatedEpochMs, AtomicLong::doubleValue)
+                .description("Kafka Lag最近一次成功更新时间")
+                .register(meterRegistry);
+        checkFailureCounter = Counter.builder("benchmark.kafka.lag.check.failures")
+                .description("Kafka Lag检查失败次数")
+                .register(meterRegistry);
+    }
 
     /** Topic名称，与 VoucherOrderConsumer 订阅的 Topic 一致 */
     @Value("${spring.kafka.template.default-topic:seckill-order}")
@@ -112,9 +141,11 @@ public class KafkaLagMonitorScheduler {
                     .collect(Collectors.toList());
 
             if (partitions.isEmpty()) {
+                partitionCountValue.set(0L);
                 log.debug("Kafka lag monitor: topic {} has no partitions", topic);
                 return;
             }
+            partitionCountValue.set(partitions.size());
 
             // ========== 第2步：获取消费组已提交的位点 ==========
             Map<TopicPartition, OffsetAndMetadata> committed;
@@ -155,9 +186,16 @@ public class KafkaLagMonitorScheduler {
             }
 
             if (withCommit == 0) {
+                totalLagValue.set(0L);
+                partitionsWithCommitValue.set(0L);
+                lastUpdatedEpochMs.set(System.currentTimeMillis());
                 log.debug("Kafka lag monitor: no committed offsets for group {} on topic {} yet", groupId, topic);
                 return;
             }
+
+            totalLagValue.set(totalLag);
+            partitionsWithCommitValue.set(withCommit);
+            lastUpdatedEpochMs.set(System.currentTimeMillis());
 
             // ========== 第5步：判断是否超过阈值 ==========
             if (totalLag > lagThreshold) {
@@ -169,8 +207,10 @@ public class KafkaLagMonitorScheduler {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            checkFailureCounter.increment();
             log.error("Kafka lag monitor interrupted", e);
         } catch (Exception ex) {
+            checkFailureCounter.increment();
             log.error("Kafka lag monitor failed: {}", ex.toString(), ex);
         }
     }

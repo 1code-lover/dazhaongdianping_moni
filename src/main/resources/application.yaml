@@ -1,5 +1,8 @@
 server:
   port: ${SERVER_PORT:8081}
+  tomcat:
+    mbeanregistry:
+      enabled: true
 
 spring:
   application:
@@ -45,12 +48,16 @@ spring:
         enable.idempotence: true
     consumer:
       group-id: ${KAFKA_CONSUMER_GROUP:seckill-order-g1}
+      concurrency: ${KAFKA_CONSUMER_CONCURRENCY:1}
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       auto-offset-reset: latest
       enable-auto-commit: false
 
 app:
+  cache:
+    shop:
+      mode: ${SHOP_CACHE_MODE:local-redis}
   security:
     # 逗号分隔的管理员用户 ID；空配置时后台接口默认拒绝访问
     admin-user-ids: ${ADMIN_USER_IDS:}
@@ -61,7 +68,10 @@ app:
   kafka:
     relay:
       consumer-name: ${KAFKA_RELAY_CONSUMER_NAME:}
+      batch-size: ${KAFKA_RELAY_BATCH_SIZE:100}
+      block-timeout-ms: ${KAFKA_RELAY_BLOCK_TIMEOUT_MS:2000}
     consumer:
+      concurrency: ${KAFKA_CONSUMER_CONCURRENCY:${spring.kafka.consumer.concurrency:1}}
       fail-once: false
       fail-always: false
       fail-voucher-id: -1
@@ -75,6 +85,9 @@ app:
       lag-threshold: 500
       interval-ms: 60000
   seckill:
+    mode: ${SECKILL_MODE:redis-stream-kafka}
+    redis-stream:
+      consumer-name: ${REDIS_STREAM_CONSUMER_NAME:}
     reconcile:
       enabled: true
       interval-ms: 300000

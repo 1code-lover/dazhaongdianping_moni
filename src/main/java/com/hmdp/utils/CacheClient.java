@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.hmdp.entity.ShopType;
+import com.hmdp.monitor.CustomMetricsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.ClassPathResource;
@@ -57,6 +58,9 @@ public class CacheClient {
     @Resource
     @Qualifier("shopTypeLocalCache")
     private Cache<String, List<ShopType>> shopTypeLocalCache;
+
+    @Resource
+    private CustomMetricsService customMetricsService;
 
     public CacheClient(StringRedisTemplate stringRedisTemplate) {
         this.stringRedisTemplate = stringRedisTemplate;
@@ -121,12 +125,16 @@ public class CacheClient {
         if (StrUtil.isNotBlank(json)) {
             try {
                 R r = objectMapper.readValue(json, typeReference);
+                customMetricsService.recordRedisHit();
                 localCache.put(localKey, objectMapper.convertValue(r, new TypeReference<List<ShopType>>() {}));
                 log.info("Redis cache hit, key={}, local cache refreshed", redisKey);
                 return r;
             } catch (JsonProcessingException e) {
+                customMetricsService.recordRedisMiss();
                 log.warn("Failed to deserialize redis list cache, key={}", redisKey, e);
             }
+        } else {
+            customMetricsService.recordRedisMiss();
         }
 
         R r = dbFallback.get();
@@ -157,14 +165,17 @@ public class CacheClient {
 
         String json = stringRedisTemplate.opsForValue().get(key);
         if (StrUtil.isNotBlank(json)) {
+            customMetricsService.recordRedisHit();
             log.info("Redis cache hit, key={}", key);
             return JSONUtil.toBean(json, type);
         }
         if (json != null) {
+            customMetricsService.recordRedisHit();
             log.info("Redis cache hit empty marker, key={}", key);
             return null;
         }
 
+        customMetricsService.recordRedisMiss();
         log.info("Redis cache miss, key={}, fallback to db", key);
         R r = dbFallback.apply(id);
         if (r == null) {
@@ -182,8 +193,11 @@ public class CacheClient {
         String key = keyPrefix + id;
         String json = stringRedisTemplate.opsForValue().get(key);
         if (StrUtil.isBlank(json)) {
+            customMetricsService.recordRedisMiss();
             return null;
         }
+
+        customMetricsService.recordRedisHit();
 
         RedisData redisData = JSONUtil.toBean(json, RedisData.class);
         R r = JSONUtil.toBean((JSONObject) redisData.getData(), type);
@@ -216,11 +230,15 @@ public class CacheClient {
         String key = keyPrefix + id;
         String shopJson = stringRedisTemplate.opsForValue().get(key);
         if (StrUtil.isNotBlank(shopJson)) {
+            customMetricsService.recordRedisHit();
             return JSONUtil.toBean(shopJson, type);
         }
         if (shopJson != null) {
+            customMetricsService.recordRedisHit();
             return null;
         }
+
+        customMetricsService.recordRedisMiss();
 
         String lockKey = LOCK_SHOP_KEY + id;
         String lockValue = newLockValue();

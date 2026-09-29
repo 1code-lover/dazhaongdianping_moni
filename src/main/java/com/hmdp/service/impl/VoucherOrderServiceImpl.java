@@ -5,6 +5,7 @@ import com.hmdp.dto.Result;
 import com.hmdp.entity.VoucherOrder;
 import com.hmdp.mapper.VoucherOrderMapper;
 import com.hmdp.mq.SeckillOrderException;
+import com.hmdp.monitor.CustomMetricsService;
 import com.hmdp.service.ISeckillVoucherService;
 import com.hmdp.service.IVoucherOrderService;
 import com.hmdp.utils.RedisIdWorker;
@@ -19,6 +20,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import javax.annotation.Resource;
 import java.util.Collections;
@@ -81,6 +84,8 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     private RedissonClient redissonClient;
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+    @Resource
+    private CustomMetricsService customMetricsService;
 
     /**
      * 加载seckill.lua脚本
@@ -120,6 +125,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         boolean isLock = redisLock.tryLock();
         if (!isLock) {
             log.error("Create voucher order blocked by lock, userId={}, voucherId={}", userId, voucherId);
+            customMetricsService.incrementSeckillFail();
             // 获取锁失败 → 抛出可恢复异常，Kafka会重试
             throw new SeckillOrderException(true, "LOCK_FAILED");
         }
@@ -132,6 +138,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             if (count > 0) {
                 // 已有订单 → 不抛异常，静默跳过（幂等处理）
                 log.warn("Create voucher order skipped, duplicate order detected, userId={}, voucherId={}", userId, voucherId);
+                customMetricsService.incrementSeckillFail();
                 return;
             }
 
@@ -145,6 +152,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             if (!success) {
                 // 库存不足 → 抛出不可恢复异常，需要回滚Redis预扣
                 log.error("Create voucher order failed, no stock, userId={}, voucherId={}", userId, voucherId);
+                customMetricsService.incrementSeckillFail();
                 throw new SeckillOrderException(false, "NO_DB_STOCK");
             }
 
@@ -153,17 +161,35 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             // 表上有唯一索引(user_id, voucher_id)兜底防重
             try {
                 save(voucherOrder);
+                recordSeckillSuccessAfterCommit();
                 log.info("Create voucher order success, orderId={}, userId={}, voucherId={}",
                         voucherOrder.getId(), userId, voucherId);
             } catch (DuplicateKeyException e) {
                 // 唯一索引冲突 → 幂等处理，忽略
                 log.warn("Create voucher order duplicate key ignored, orderId={}, userId={}, voucherId={}",
                         voucherOrder.getId(), userId, voucherId);
+                customMetricsService.incrementSeckillFail();
             }
         } finally {
             // ========== 释放分布式锁 ==========
             redisLock.unlock();
         }
+    }
+
+    /**
+     * 仅在订单事务提交后记录成功，避免事务回滚产生虚假的成功指标。
+     */
+    private void recordSeckillSuccessAfterCommit() {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            customMetricsService.incrementSeckillSuccess();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
+            @Override
+            public void afterCommit() {
+                customMetricsService.incrementSeckillSuccess();
+            }
+        });
     }
 
     /**
@@ -201,6 +227,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         // 4.判断结果
         if (r != 0) {
             // 失败：1=库存不足  2=重复下单
+            customMetricsService.incrementSeckillFail();
             return Result.fail(r == 1 ? "库存不足" : "不能重复下单");
         }
 

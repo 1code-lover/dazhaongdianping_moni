@@ -1,6 +1,9 @@
 package com.hmdp.config;
 
 import com.hmdp.entity.SeckillVoucher;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import com.hmdp.service.ISeckillVoucherService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hmdp.utils.RedisConstants.SECKILL_STOCK_KEY;
 
@@ -55,11 +59,37 @@ public class SeckillStockReconcileScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(SeckillStockReconcileScheduler.class);
 
-    @Resource
-    private ISeckillVoucherService seckillVoucherService;
+    private final ISeckillVoucherService seckillVoucherService;
+    private final StringRedisTemplate stringRedisTemplate;
+    private final MeterRegistry meterRegistry;
+    private final AtomicLong lastUpdatedEpochMs = new AtomicLong();
+    private final Counter reconcileRunsCounter;
+    private final Counter mismatchCounter;
+    private final Counter missingRedisKeyCounter;
+    private final Counter invalidRedisValueCounter;
 
-    @Resource
-    private StringRedisTemplate stringRedisTemplate;
+    public SeckillStockReconcileScheduler(ISeckillVoucherService seckillVoucherService,
+                                          StringRedisTemplate stringRedisTemplate,
+                                          MeterRegistry meterRegistry) {
+        this.seckillVoucherService = seckillVoucherService;
+        this.stringRedisTemplate = stringRedisTemplate;
+        this.meterRegistry = meterRegistry;
+        reconcileRunsCounter = Counter.builder("benchmark.stock.reconcile.runs")
+                .description("秒杀库存对账执行次数")
+                .register(meterRegistry);
+        mismatchCounter = Counter.builder("benchmark.stock.reconcile.mismatch")
+                .description("秒杀库存对账发现不一致次数")
+                .register(meterRegistry);
+        missingRedisKeyCounter = Counter.builder("benchmark.stock.reconcile.missing.redis.key")
+                .description("秒杀库存对账发现Redis Key缺失次数")
+                .register(meterRegistry);
+        invalidRedisValueCounter = Counter.builder("benchmark.stock.reconcile.invalid.redis.value")
+                .description("秒杀库存对账发现非法Redis库存值次数")
+                .register(meterRegistry);
+        Gauge.builder("benchmark.stock.reconcile.last.updated.epoch.ms", lastUpdatedEpochMs, AtomicLong::doubleValue)
+                .description("秒杀库存对账最近一次完成时间")
+                .register(meterRegistry);
+    }
 
     /**
      * 对账任务
@@ -68,9 +98,11 @@ public class SeckillStockReconcileScheduler {
      */
     @Scheduled(fixedDelayString = "${app.seckill.reconcile.interval-ms:300000}")
     public void reconcile() {
+        reconcileRunsCounter.increment();
         // 1. 查询所有秒杀券
         List<SeckillVoucher> vouchers = seckillVoucherService.list();
         if (vouchers == null || vouchers.isEmpty()) {
+            lastUpdatedEpochMs.set(System.currentTimeMillis());
             return;
         }
 
@@ -86,6 +118,7 @@ public class SeckillStockReconcileScheduler {
 
             // 3. Redis key 不存在的情况
             if (redisVal == null) {
+                missingRedisKeyCounter.increment();
                 if (v.getStock() > 0) {
                     // DB有库存但Redis无key，说明预扣丢失了
                     log.warn("Seckill stock reconcile: Redis key missing, key={} dbStock={} voucherId={}",
@@ -99,6 +132,7 @@ public class SeckillStockReconcileScheduler {
             try {
                 redisStock = Integer.parseInt(redisVal.trim());
             } catch (NumberFormatException e) {
+                invalidRedisValueCounter.increment();
                 log.warn("Seckill stock reconcile: invalid Redis value, key={} value={} voucherId={}",
                         key, redisVal, v.getVoucherId());
                 continue;
@@ -107,9 +141,11 @@ public class SeckillStockReconcileScheduler {
             // 5. 比较
             int dbStock = v.getStock();
             if (redisStock != dbStock) {
+                mismatchCounter.increment();
                 log.warn("Seckill stock reconcile: mismatch redisStock={} dbStock={} voucherId={}",
                         redisStock, dbStock, v.getVoucherId());
             }
         }
+        lastUpdatedEpochMs.set(System.currentTimeMillis());
     }
 }
