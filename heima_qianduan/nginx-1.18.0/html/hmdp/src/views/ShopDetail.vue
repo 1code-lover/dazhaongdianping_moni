@@ -69,6 +69,64 @@
           </article>
         </div>
       </section>
+
+      <!-- 评价列表 -->
+      <section class="review-card section-block">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">用户评价</h2>
+            <p class="section-subtitle">已有 {{ reviewTotal }} 条评价，平均评分 {{ shop.avgScore || 0 }} 分</p>
+          </div>
+        </div>
+
+        <!-- 加载中 -->
+        <div v-if="reviewLoading">
+          <el-skeleton :rows="3" animated />
+        </div>
+
+        <!-- 空数据 -->
+        <div v-else-if="reviews.length === 0" class="empty-state">
+          <el-empty description="暂无评价" />
+        </div>
+
+        <!-- 评价列表 -->
+        <div v-else class="review-list">
+          <article v-for="review in reviews" :key="review.id" class="review-item">
+            <div class="review-header">
+              <div class="review-user">
+                <strong>{{ review.userName || '匿名用户' }}</strong>
+                <el-rate :model-value="review.score" disabled size="small" />
+              </div>
+              <span class="review-time">{{ review.createTime }}</span>
+            </div>
+
+            <div class="review-content">
+              <p>{{ review.content }}</p>
+              <div v-if="review.images && review.images.length > 0" class="review-images">
+                <img v-for="(img, idx) in review.images" :key="idx" :src="img" alt="评价图片">
+              </div>
+            </div>
+
+            <!-- 商家回复 -->
+            <div v-if="review.reply" class="review-reply">
+              <strong>商家回复：</strong>
+              <p>{{ review.reply }}</p>
+              <span class="reply-time">{{ review.replyTime }}</span>
+            </div>
+          </article>
+        </div>
+
+        <!-- 分页 -->
+        <el-pagination
+          v-if="reviewTotal > reviewPageSize"
+          v-model:current-page="reviewCurrentPage"
+          :page-size="reviewPageSize"
+          :total="reviewTotal"
+          layout="prev, pager, next"
+          @current-change="handleReviewPageChange"
+          style="margin-top: 20px; justify-content: center;"
+        />
+      </section>
     </div>
   </div>
 </template>
@@ -87,6 +145,7 @@ import { ElMessage } from 'element-plus'
 import { Clock, Location, Service } from '@element-plus/icons-vue'
 import { getCombosByShop } from '../api/combo'
 import { getShopById } from '../api/shop'
+import { getShopReviews } from '../api/review'
 import { useUserStore } from '../stores/user'
 
 const route = useRoute()
@@ -96,6 +155,13 @@ const shop = ref(null)
 const combos = ref([])
 const loading = ref(false)
 const error = ref(false)
+
+// 评价相关
+const reviews = ref([])
+const reviewLoading = ref(false)
+const reviewCurrentPage = ref(1)
+const reviewPageSize = ref(10)
+const reviewTotal = ref(0)
 
 const coverImage = computed(() => {
   if (!shop.value?.images) {
@@ -115,6 +181,37 @@ const buyCombo = (combo) => {
   }
 
   router.push(`/order/confirm?type=2&bizId=${combo.id}&shopId=${shop.value.id}`)
+}
+
+/**
+ * 加载评价列表
+ */
+const fetchReviews = async () => {
+  reviewLoading.value = true
+  try {
+    const shopId = route.params.id
+    const res = await getShopReviews(shopId, reviewCurrentPage.value, reviewPageSize.value)
+    if (res.success && res.data) {
+      // 处理图片字段：逗号分隔的字符串转数组
+      reviews.value = (res.data.records || res.data || []).map(review => ({
+        ...review,
+        images: review.images ? review.images.split(',').filter(Boolean) : []
+      }))
+      reviewTotal.value = res.data.total || reviews.value.length
+    }
+  } catch (err) {
+    console.error('加载评价列表失败:', err)
+  } finally {
+    reviewLoading.value = false
+  }
+}
+
+/**
+ * 评价分页切换
+ */
+const handleReviewPageChange = (page) => {
+  reviewCurrentPage.value = page
+  fetchReviews()
 }
 
 /**
@@ -138,6 +235,9 @@ const fetchDetail = async () => {
     if (comboRes.success) {
       combos.value = comboRes.data || []
     }
+
+    // 加载评价列表
+    fetchReviews()
   } catch (err) {
     console.error('加载商户详情失败:', err)
     error.value = true
@@ -263,6 +363,94 @@ onMounted(() => {
   color: var(--text-color-secondary);
 }
 
+/* 评价卡片 */
+.review-card {
+  padding: 28px;
+}
+
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.review-item {
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.review-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.review-user strong {
+  font-size: 16px;
+}
+
+.review-time {
+  color: var(--text-color-muted);
+  font-size: 14px;
+}
+
+.review-content p {
+  margin: 0 0 12px;
+  color: var(--text-color-regular);
+  line-height: 1.7;
+}
+
+.review-images {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.review-images img {
+  width: 100px;
+  height: 100px;
+  border-radius: 12px;
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.review-images img:hover {
+  transform: scale(1.05);
+}
+
+.review-reply {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(229, 72, 77, 0.05);
+}
+
+.review-reply strong {
+  color: var(--danger-color);
+  font-size: 14px;
+}
+
+.review-reply p {
+  margin: 8px 0 4px;
+  color: var(--text-color-secondary);
+  line-height: 1.6;
+}
+
+.reply-time {
+  color: var(--text-color-muted);
+  font-size: 12px;
+}
+
 @media (max-width: 768px) {
   .hero-card,
   .combo-item {
@@ -272,7 +460,8 @@ onMounted(() => {
   }
 
   .hero-card,
-  .combo-card {
+  .combo-card,
+  .review-card {
     padding: 22px;
   }
 
@@ -282,6 +471,12 @@ onMounted(() => {
 
   .hero-media {
     min-height: 240px;
+  }
+
+  .review-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 }
 </style>

@@ -66,6 +66,14 @@
                     <span>核销码</span>
                     <el-tag type="success">{{ order.verifyCode }}</el-tag>
                   </div>
+                  <el-button
+                    v-if="order.status === 2 && !order.hasReview"
+                    type="primary"
+                    size="small"
+                    @click="openReviewDialog(order)"
+                  >
+                    发表评价
+                  </el-button>
                 </div>
               </div>
             </div>
@@ -73,6 +81,14 @@
         </div>
       </section>
     </div>
+
+    <!-- 评价表单对话框 -->
+    <ReviewForm
+      v-model="reviewDialogVisible"
+      :order-id="currentOrder?.id"
+      :order-type="currentOrder?.orderType || 2"
+      @success="handleReviewSuccess"
+    />
   </div>
 </template>
 
@@ -87,11 +103,16 @@
 import { onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { cancelOrder, getMyOrders, payOrder } from '../api/order'
+import ReviewForm from '../components/ReviewForm.vue'
 
 const activeStatus = ref('all')
 const orders = ref([])
 const loading = ref(false)
 const error = ref(false)
+
+// 评价对话框
+const reviewDialogVisible = ref(false)
+const currentOrder = ref(null)
 
 /**
  * 获取订单状态标签类型
@@ -178,6 +199,21 @@ const cancelCurrentOrder = async (order) => {
   } catch (error) {
     // 用户取消时不需要额外提示
   }
+}
+
+/**
+ * 打开评价对话框
+ */
+const openReviewDialog = (order) => {
+  currentOrder.value = order
+  reviewDialogVisible.value = true
+}
+
+/**
+ * 评价成功回调
+ */
+const handleReviewSuccess = () => {
+  fetchOrders()
 }
 
 onMounted(() => {
