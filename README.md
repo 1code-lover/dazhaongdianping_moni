@@ -378,6 +378,15 @@ pytest --base-url http://127.0.0.1:8081 --ui-base-url http://127.0.0.1:8080 --al
 allure serve reports/allure-results
 ```
 
+## 开发规范
+
+本项目遵循以下规范文档：
+
+- [AGENTS.md](AGENTS.md) — 项目开发规范（流程、注释、提交、代码风格）
+- [DOCS.md](DOCS.md) — 文档管理规范（目录结构、命名、归档策略）
+- [TESTING.md](TESTING.md) — 测试规范
+- [TOOLS.md](TOOLS.md) — 工具使用指南
+
 ## 文档导航
 
 当前仓库中除了源码，还有不少设计、压测、面试准备和实施记录文档。暂时主要分布在仓库根目录和 `tests/` 目录：
