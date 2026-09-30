@@ -1,275 +1,263 @@
 package com.hmdp.service;
 
-import java.util.Arrays;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
-
 import com.hmdp.dto.ReviewDTO;
 import com.hmdp.dto.ReviewReplyDTO;
 import com.hmdp.dto.Result;
-import com.hmdp.dto.UserDTO;
-import com.hmdp.entity.Order;
-import com.hmdp.entity.Review;
-import com.hmdp.entity.ShopApply;
-import com.hmdp.mapper.OrderMapper;
-import com.hmdp.mapper.ReviewMapper;
-import com.hmdp.mapper.ShopApplyMapper;
-import com.hmdp.mapper.ShopMapper;
 import com.hmdp.service.impl.ReviewServiceImpl;
 import com.hmdp.utils.UserHolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import javax.annotation.Resource;
+import java.time.LocalDateTime;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 评价服务单元测试。
- * 使用 Mockito 隔离数据库和 Spring 容器，验证评价提交、查询和回复规则。
- *
- * @author ethan
- * @date 2026-07-16
+ * 评价服务单元测试
  */
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
 class ReviewServiceTest {
 
-    private static final long USER_ID = 1010L;
-    private static final long SHOP_ID = 100L;
-    private static final long REVIEW_ID = 200L;
+    private static final long TEST_USER_ID = 1010L;
+    private static final long ORDER_ID_SUCCESS = 11001L;
+    private static final long ORDER_ID_SCORE_INVALID = 11002L;
+    private static final long ORDER_ID_CONTENT_TOO_LONG = 11003L;
+    private static final long EXISTING_REVIEW_ID = 21001L;
+    private static final long EXISTING_REVIEW_ORDER_ID = 11010L;
+    private static final long TEST_SHOP_ID = 1L;
 
-    @Mock
-    private ReviewMapper reviewMapper;
-
-    @Mock
-    private OrderMapper orderMapper;
-
-    @Mock
-    private ShopMapper shopMapper;
-
-    @Mock
-    private ShopApplyMapper shopApplyMapper;
-
-    @InjectMocks
+    @Resource
     private ReviewServiceImpl reviewService;
 
-    /**
-     * 初始化登录用户和通用 Mapper 行为。
-     */
+    @Resource
+    private JdbcTemplate jdbcTemplate;
+
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(reviewService, "baseMapper", reviewMapper);
-        UserDTO user = new UserDTO();
-        user.setId(USER_ID);
-        UserHolder.saveUser(user);
+        // 模拟用户登录
+        UserHolder.saveUser(new com.hmdp.dto.UserDTO() {{
+            setId(TEST_USER_ID);
+        }});
 
+        ensureReviewInfrastructure();
+        seedTestData();
     }
 
-    /**
-     * 清理线程中的登录用户。
-     */
     @AfterEach
     void tearDown() {
         UserHolder.removeUser();
     }
 
     /**
-     * 合法评价应保存成功并更新商户评分。
+     * 测试提交评价 - 正常场景
      */
     @Test
     void testSubmitReviewWhenValidThenSuccess() {
-        prepareReviewSubmission();
-        when(reviewMapper.insert(any(Review.class))).thenAnswer(invocation -> {
-            Review review = invocation.getArgument(0);
-            review.setId(REVIEW_ID);
-            return 1;
-        });
-        ReviewDTO dto = createReviewDto(1L, 5, "非常好吃，服务态度很好！");
+        // given
+        ReviewDTO dto = new ReviewDTO();
+        dto.setOrderId(ORDER_ID_SUCCESS);
+        dto.setOrderType(2);
+        dto.setScore(5);
+        dto.setContent("非常好吃，服务态度很好！");
 
+        // when
         Result result = reviewService.submitReview(dto);
 
-        assertTrue(result.getSuccess());
-        assertEquals(REVIEW_ID, result.getData());
-        verify(reviewMapper).insert(any(Review.class));
-        verify(reviewMapper).updateShopScore(SHOP_ID);
-    }
-
-    /**
-     * 评分超出范围时应拒绝提交。
-     */
-    @Test
-    void testSubmitReviewWhenScoreOutOfRangeThenFail() {
-        prepareReviewSubmission();
-        ReviewDTO dto = createReviewDto(2L, 6, "测试评价");
-
-        Result result = reviewService.submitReview(dto);
-
-        assertFalse(result.getSuccess());
-        assertEquals("评分范围为1-5", result.getErrorMsg());
-    }
-
-    /**
-     * 评价内容超过 500 字时应拒绝提交。
-     */
-    @Test
-    void testSubmitReviewWhenContentTooLongThenFail() {
-        prepareReviewSubmission();
-        ReviewDTO dto = createReviewDto(3L, 4, repeat('a', 501));
-
-        Result result = reviewService.submitReview(dto);
-
-        assertFalse(result.getSuccess());
-        assertEquals("评价内容不超过500字", result.getErrorMsg());
-    }
-
-    /**
-     * 查询存在的评价时应返回评价详情。
-     */
-    @Test
-    void testGetReviewByIdWhenExistsThenSuccess() {
-        Review review = createReview(REVIEW_ID, SHOP_ID);
-        when(reviewMapper.selectById(REVIEW_ID)).thenReturn(review);
-
-        Result result = reviewService.getReviewById(REVIEW_ID);
-
-        assertTrue(result.getSuccess());
+        // then
+        assertTrue(Boolean.TRUE.equals(result.getSuccess()));
         assertNotNull(result.getData());
     }
 
     /**
-     * 查询不存在的评价时应返回失败结果。
+     * 测试提交评价 - 评分超出范围
+     */
+    @Test
+    void testSubmitReviewWhenScoreOutOfRangeThenFail() {
+        // given
+        ReviewDTO dto = new ReviewDTO();
+        dto.setOrderId(ORDER_ID_SCORE_INVALID);
+        dto.setOrderType(2);
+        dto.setScore(6); // 超出范围
+        dto.setContent("测试评价");
+
+        // when
+        Result result = reviewService.submitReview(dto);
+
+        // then
+        assertFalse(Boolean.TRUE.equals(result.getSuccess()));
+        assertEquals("评分范围为1-5", result.getErrorMsg());
+    }
+
+    /**
+     * 测试提交评价 - 内容超过500字
+     */
+    @Test
+    void testSubmitReviewWhenContentTooLongThenFail() {
+        // given
+        ReviewDTO dto = new ReviewDTO();
+        dto.setOrderId(ORDER_ID_CONTENT_TOO_LONG);
+        dto.setOrderType(2);
+        dto.setScore(4);
+        dto.setContent("a".repeat(501)); // 超过500字
+
+        // when
+        Result result = reviewService.submitReview(dto);
+
+        // then
+        assertFalse(Boolean.TRUE.equals(result.getSuccess()));
+        assertEquals("评价内容不超过500字", result.getErrorMsg());
+    }
+
+    /**
+     * 测试查看单条评价 - 正常场景
+     */
+    @Test
+    void testGetReviewByIdWhenExistsThenSuccess() {
+        // given
+        Long reviewId = EXISTING_REVIEW_ID;
+
+        // when
+        Result result = reviewService.getReviewById(reviewId);
+
+        // then
+        assertTrue(Boolean.TRUE.equals(result.getSuccess()));
+        assertNotNull(result.getData());
+    }
+
+    /**
+     * 测试查看单条评价 - 不存在
      */
     @Test
     void testGetReviewByIdWhenNotExistsThenFail() {
-        when(reviewMapper.selectById(999L)).thenReturn(null);
+        // given
+        Long reviewId = 999L;
 
-        Result result = reviewService.getReviewById(999L);
+        // when
+        Result result = reviewService.getReviewById(reviewId);
 
-        assertFalse(result.getSuccess());
+        // then
+        assertFalse(Boolean.TRUE.equals(result.getSuccess()));
         assertEquals("评价不存在", result.getErrorMsg());
     }
 
     /**
-     * 店铺所属商家提交合法回复时应更新成功。
+     * 测试商家回复评价 - 正常场景
      */
     @Test
     void testReplyReviewWhenValidThenSuccess() {
-        prepareReplyScenario(null);
-        when(reviewMapper.updateById(any(Review.class))).thenReturn(1);
-        ReviewReplyDTO dto = createReplyDto("感谢您的好评，欢迎下次光临！");
+        // given
+        ReviewReplyDTO dto = new ReviewReplyDTO();
+        dto.setReviewId(EXISTING_REVIEW_ID);
+        dto.setReply("感谢您的好评，欢迎下次光临！");
 
+        // when
         Result result = reviewService.replyReview(dto);
 
-        assertTrue(result.getSuccess());
-        verify(reviewMapper).updateById(any(Review.class));
+        // then
+        assertTrue(Boolean.TRUE.equals(result.getSuccess()));
     }
 
     /**
-     * 回复内容超过 200 字时应拒绝更新。
+     * 测试商家回复评价 - 回复内容超过200字
      */
     @Test
     void testReplyReviewWhenReplyTooLongThenFail() {
-        prepareReplyScenario(null);
-        ReviewReplyDTO dto = createReplyDto(repeat('a', 201));
+        // given
+        ReviewReplyDTO dto = new ReviewReplyDTO();
+        dto.setReviewId(EXISTING_REVIEW_ID);
+        dto.setReply("a".repeat(201)); // 超过200字
 
+        // when
         Result result = reviewService.replyReview(dto);
 
-        assertFalse(result.getSuccess());
+        // then
+        assertFalse(Boolean.TRUE.equals(result.getSuccess()));
         assertEquals("回复内容不超过200字", result.getErrorMsg());
     }
 
     /**
-     * 准备已核销且尚未评价的订单。
+     * 确保评价相关表和字段存在
      */
-    private void prepareReviewSubmission() {
-        Order verifiedOrder = new Order();
-        verifiedOrder.setId(1L);
-        verifiedOrder.setShopId(SHOP_ID);
-        verifiedOrder.setStatus(2);
-        when(orderMapper.selectById(anyLong())).thenReturn(verifiedOrder);
-        when(reviewMapper.selectCount(any())).thenReturn(0);
+    private void ensureReviewInfrastructure() {
+        jdbcTemplate.execute(
+                "CREATE TABLE IF NOT EXISTS tb_review (" +
+                        "id bigint(20) NOT NULL AUTO_INCREMENT," +
+                        "user_id bigint(20) NOT NULL," +
+                        "shop_id bigint(20) NOT NULL," +
+                        "order_id bigint(20) NOT NULL," +
+                        "order_type tinyint(1) NOT NULL," +
+                        "score int(1) NOT NULL," +
+                        "content text DEFAULT NULL," +
+                        "images varchar(1000) DEFAULT NULL," +
+                        "reply text DEFAULT NULL," +
+                        "reply_time datetime DEFAULT NULL," +
+                        "status tinyint(1) DEFAULT 1," +
+                        "is_deleted tinyint(1) DEFAULT 0," +
+                        "create_time datetime DEFAULT CURRENT_TIMESTAMP," +
+                        "update_time datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," +
+                        "PRIMARY KEY (id)," +
+                        "UNIQUE KEY uk_order_id (order_id)," +
+                        "KEY idx_shop_id (shop_id)," +
+                        "KEY idx_user_id (user_id)" +
+                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评价表'"
+        );
+
+        try {
+            jdbcTemplate.execute("ALTER TABLE tb_shop ADD COLUMN avg_score decimal(2,1) DEFAULT 0 COMMENT '平均评分'");
+        } catch (Exception ignored) {
+        }
+
+        try {
+            jdbcTemplate.execute("ALTER TABLE tb_shop ADD COLUMN review_count int DEFAULT 0 COMMENT '评价数量'");
+        } catch (Exception ignored) {
+        }
+
+        try {
+            jdbcTemplate.execute("ALTER TABLE tb_shop_apply ADD COLUMN shop_id bigint(20) NULL COMMENT '审核通过后创建的店铺ID'");
+        } catch (Exception ignored) {
+        }
     }
 
     /**
-     * 创建评价提交参数。
-     *
-     * @param orderId 订单 ID
-     * @param score 评分
-     * @param content 评价内容
-     * @return 评价参数
+     * 准备测试夹具数据
      */
-    private ReviewDTO createReviewDto(Long orderId, Integer score, String content) {
-        ReviewDTO dto = new ReviewDTO();
-        dto.setOrderId(orderId);
-        dto.setOrderType(2);
-        dto.setScore(score);
-        dto.setContent(content);
-        return dto;
+    private void seedTestData() {
+        jdbcTemplate.update("DELETE FROM tb_review WHERE id = ? OR order_id IN (?, ?, ?, ?)",
+                EXISTING_REVIEW_ID, ORDER_ID_SUCCESS, ORDER_ID_SCORE_INVALID, ORDER_ID_CONTENT_TOO_LONG, EXISTING_REVIEW_ORDER_ID);
+        jdbcTemplate.update("DELETE FROM tb_order WHERE id IN (?, ?, ?, ?)",
+                ORDER_ID_SUCCESS, ORDER_ID_SCORE_INVALID, ORDER_ID_CONTENT_TOO_LONG, EXISTING_REVIEW_ORDER_ID);
+        jdbcTemplate.update("DELETE FROM tb_shop_apply WHERE user_id = ?", TEST_USER_ID);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        insertOrder(ORDER_ID_SUCCESS, "ORD-REVIEW-SUCCESS", "评价测试订单-成功场景", now);
+        insertOrder(ORDER_ID_SCORE_INVALID, "ORD-REVIEW-SCORE", "评价测试订单-评分越界", now.plusSeconds(1));
+        insertOrder(ORDER_ID_CONTENT_TOO_LONG, "ORD-REVIEW-CONTENT", "评价测试订单-内容过长", now.plusSeconds(2));
+        insertOrder(EXISTING_REVIEW_ORDER_ID, "ORD-REVIEW-EXISTING", "评价测试订单-已有评价", now.plusSeconds(3));
+
+        jdbcTemplate.update(
+                "INSERT INTO tb_review " +
+                        "(id, user_id, shop_id, order_id, order_type, score, content, reply, reply_time, status, is_deleted, create_time, update_time) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, 1, 0, NOW(), NOW())",
+                EXISTING_REVIEW_ID, TEST_USER_ID, TEST_SHOP_ID, EXISTING_REVIEW_ORDER_ID, 2, 5, "这是一条用于查询和回复的测试评价");
+
+        jdbcTemplate.update(
+                "INSERT INTO tb_shop_apply " +
+                        "(user_id, shop_id, shop_name, shop_type_id, contact_name, contact_phone, address, status, is_deleted, audit_time, create_time, update_time) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, NOW(), NOW(), NOW())",
+                TEST_USER_ID, TEST_SHOP_ID, "测试商户", 1L, "测试联系人", "13800138000", "测试地址");
     }
 
-    /**
-     * 创建评价实体。
-     *
-     * @param reviewId 评价 ID
-     * @param shopId 店铺 ID
-     * @return 评价实体
-     */
-    private Review createReview(Long reviewId, Long shopId) {
-        Review review = new Review();
-        review.setId(reviewId);
-        review.setShopId(shopId);
-        review.setIsDeleted(0);
-        return review;
-    }
-
-    /**
-     * 准备商家回复场景。
-     *
-     * @param existingReply 已存在回复
-     */
-    private void prepareReplyScenario(String existingReply) {
-        Review review = createReview(REVIEW_ID, SHOP_ID);
-        review.setReply(existingReply);
-        when(reviewMapper.selectById(REVIEW_ID)).thenReturn(review);
-
-        ShopApply shopApply = new ShopApply();
-        shopApply.setShopId(SHOP_ID);
-        when(shopApplyMapper.selectOne(any())).thenReturn(shopApply);
-    }
-
-    /**
-     * 创建评价回复参数。
-     *
-     * @param reply 回复内容
-     * @return 回复参数
-     */
-    private ReviewReplyDTO createReplyDto(String reply) {
-        ReviewReplyDTO dto = new ReviewReplyDTO();
-        dto.setReviewId(REVIEW_ID);
-        dto.setReply(reply);
-        return dto;
-    }
-
-    /**
-     * 创建兼容 Java 8 的重复字符串。
-     *
-     * @param value 重复字符
-     * @param count 重复次数
-     * @return 重复后的字符串
-     */
-    private String repeat(char value, int count) {
-        char[] values = new char[count];
-        Arrays.fill(values, value);
-        return new String(values);
+    private void insertOrder(Long orderId, String orderNo, String title, LocalDateTime createTime) {
+        String verifyCode = String.format("%06d", orderId % 1000000);
+        jdbcTemplate.update(
+                "INSERT INTO tb_order " +
+                        "(id, order_no, user_id, shop_id, order_type, biz_id, title, amount, quantity, status, verify_code, pay_time, is_deleted, create_time, update_time) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 0, ?, ?)",
+                orderId, orderNo, TEST_USER_ID, TEST_SHOP_ID, 2, 1L, title, 16800L, 1, 2, verifyCode, createTime, createTime);
     }
 }

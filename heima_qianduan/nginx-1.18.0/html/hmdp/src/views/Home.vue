@@ -30,6 +30,24 @@
         </div>
       </section>
 
+      <section class="overview section-block">
+        <article class="overview-item">
+          <span>浏览路径</span>
+          <strong>首页 → 商户 → 详情 → 下单</strong>
+          <p>适合直接演示完整业务链路，也很适合作为 README 和项目汇报截图。</p>
+        </article>
+        <article class="overview-item">
+          <span>页面重点</span>
+          <strong>搜索、套餐、订单、秒杀</strong>
+          <p>把高频功能聚合在统一体验里，既方便联调，也更接近真实项目展示。</p>
+        </article>
+        <article class="overview-item">
+          <span>联调状态</span>
+          <strong>分类 {{ shopTypes.length || 0 }} / 推荐 {{ hotShops.length || 0 }}</strong>
+          <p>后端连通后，首页会自动回填分类和推荐商户，视觉效果会完整很多。</p>
+        </article>
+      </section>
+
       <section class="category-section section-block">
         <div class="section-header">
           <div>
@@ -240,6 +258,44 @@ onMounted(() => {
   padding: 34px;
 }
 
+.overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 18px;
+}
+
+.overview-item {
+  min-height: 150px;
+  padding: 22px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(249, 250, 252, 0.96) 100%);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.overview-item span {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: var(--text-color-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.overview-item strong {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.overview-item p {
+  margin: 0;
+  color: var(--text-color-secondary);
+  line-height: 1.8;
+}
+
 .hero-copy h1 {
   margin: 18px 0 14px;
   font-size: clamp(30px, 4vw, 48px);
@@ -444,6 +500,10 @@ onMounted(() => {
 }
 
 @media (max-width: 1100px) {
+  .overview {
+    grid-template-columns: 1fr;
+  }
+
   .category-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

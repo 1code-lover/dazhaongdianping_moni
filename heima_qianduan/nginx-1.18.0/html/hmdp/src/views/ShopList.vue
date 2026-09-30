@@ -7,6 +7,10 @@
             <span class="eyebrow">商户列表</span>
             <h1 class="section-title">发现附近适合去的店</h1>
             <p class="section-subtitle">支持按分类和关键词查看当前平台已有商户。</p>
+            <div class="result-meta">
+              <span class="meta-chip">结果 {{ shops.length }}</span>
+              <span class="meta-chip">{{ route.query.keyword ? `关键词：${route.query.keyword}` : `分类浏览` }}</span>
+            </div>
           </div>
           <div class="search-bar">
             <el-input
@@ -62,8 +66,14 @@
               </div>
 
               <div class="shop-bottom">
-                <el-rate :model-value="shop.score" disabled show-score />
-                <el-button type="primary" plain>查看详情</el-button>
+                <div class="shop-tags">
+                  <span v-if="shop.area" class="info-tag">{{ shop.area }}</span>
+                  <span class="info-tag">评分 {{ shop.score || 0 }}</span>
+                </div>
+                <div class="shop-actions">
+                  <el-rate :model-value="shop.score" disabled show-score />
+                  <el-button type="primary" plain>查看详情</el-button>
+                </div>
               </div>
             </div>
           </article>
@@ -189,6 +199,27 @@ onMounted(() => {
   width: min(360px, 100%);
 }
 
+.result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.meta-chip,
+.info-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  color: var(--text-color-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .shop-items {
   display: flex;
   flex-direction: column;
@@ -269,6 +300,14 @@ onMounted(() => {
   gap: 16px;
 }
 
+.shop-tags,
+.shop-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 768px) {
   .filter-panel,
   .result-panel {
@@ -283,6 +322,10 @@ onMounted(() => {
   .shop-bottom {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .search-bar {
+    width: 100%;
   }
 }
 </style>

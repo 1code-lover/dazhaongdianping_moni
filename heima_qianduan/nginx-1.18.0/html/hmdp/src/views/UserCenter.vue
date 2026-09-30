@@ -13,6 +13,12 @@
           </div>
         </div>
 
+        <div class="profile-tips">
+          <span class="tip-pill">已登录用户态</span>
+          <span class="tip-pill">适合联调订单 / 套餐</span>
+          <span class="tip-pill">适合 README 截图</span>
+        </div>
+
         <div class="profile-stats">
           <div class="stat-card">
             <strong>订单</strong>
@@ -52,10 +58,50 @@
             </div>
           </div>
 
-          <div v-if="activeMenu === 'order'" class="empty-state">
-            <el-empty description="订单列表已独立到订单页面，点击下方按钮即可查看" />
-            <div class="action-row">
-              <el-button type="primary" @click="router.push('/order')">进入订单页</el-button>
+          <div class="summary-grid">
+            <article class="summary-card">
+              <strong>当前模块</strong>
+              <p>{{ menuTitle }}</p>
+            </article>
+            <article class="summary-card">
+              <strong>页面定位</strong>
+              <p>个人资产、订单与后续扩展入口集中展示</p>
+            </article>
+            <article class="summary-card">
+              <strong>演示建议</strong>
+              <p>登录页 → 个人中心 → 订单页，适合串联用户链路</p>
+            </article>
+          </div>
+
+          <div v-if="activeMenu === 'order'">
+            <div v-if="orderLoading">
+              <el-skeleton :rows="3" animated />
+            </div>
+
+            <div v-else-if="recentOrders.length > 0" class="recent-orders">
+              <article v-for="order in recentOrders" :key="order.id" class="order-preview-card">
+                <div class="preview-top">
+                  <strong>{{ order.title }}</strong>
+                  <span class="preview-status">{{ getStatusText(order.status) }}</span>
+                </div>
+                <p class="preview-time">{{ order.createTime }}</p>
+                <div class="preview-meta">
+                  <span class="preview-pill">订单号 {{ order.orderNo }}</span>
+                  <span class="preview-pill">金额 ¥{{ (order.amount / 100).toFixed(2) }}</span>
+                  <span v-if="order.verifyCode" class="preview-pill">核销码 {{ order.verifyCode }}</span>
+                </div>
+              </article>
+
+              <div class="action-row">
+                <el-button type="primary" @click="router.push('/order')">进入订单页</el-button>
+              </div>
+            </div>
+
+            <div v-else class="empty-state">
+              <el-empty description="当前还没有订单记录，后续下单后会在这里展示最近订单" />
+              <div class="action-row">
+                <el-button type="primary" @click="router.push('/order')">进入订单页</el-button>
+              </div>
             </div>
           </div>
 
@@ -80,14 +126,17 @@
  * @author ethan
  * @date 2026-06-21
  */
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Collection, Document, Ticket } from '@element-plus/icons-vue'
+import { getMyOrders } from '../api/order'
 import { useUserStore } from '../stores/user'
 
 const router = useRouter()
 const userStore = useUserStore()
 const activeMenu = ref('order')
+const orderLoading = ref(false)
+const recentOrders = ref([])
 
 const menuItems = [
   { key: 'order', label: '我的订单', icon: Document },
@@ -119,11 +168,46 @@ const menuDescription = computed(() => {
 })
 
 /**
+ * 获取最近订单预览
+ */
+const fetchRecentOrders = async () => {
+  orderLoading.value = true
+  try {
+    const res = await getMyOrders(undefined, 1, 3)
+    if (res.success) {
+      recentOrders.value = res.data || []
+    }
+  } catch (error) {
+    console.error('加载最近订单失败:', error)
+    recentOrders.value = []
+  } finally {
+    orderLoading.value = false
+  }
+}
+
+/**
+ * 获取订单状态文案
+ */
+const getStatusText = (status) => {
+  const textMap = {
+    0: '待支付',
+    1: '待使用',
+    2: '已核销',
+    3: '已取消'
+  }
+  return textMap[status] || '未知状态'
+}
+
+/**
  * 切换个人中心菜单
  */
 const handleMenuSelect = (key) => {
   activeMenu.value = key
 }
+
+onMounted(() => {
+  fetchRecentOrders()
+})
 </script>
 
 <style scoped>
@@ -173,6 +257,24 @@ const handleMenuSelect = (key) => {
   display: grid;
   gap: 14px;
   margin-top: 18px;
+}
+
+.profile-tips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.tip-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .stat-card {
@@ -236,10 +338,86 @@ const handleMenuSelect = (key) => {
   padding: 28px;
 }
 
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.summary-card {
+  min-height: 126px;
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.summary-card strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+
+.summary-card p {
+  margin: 0;
+  color: var(--text-color-secondary);
+  line-height: 1.8;
+}
+
 .action-row {
   display: flex;
   justify-content: center;
   margin-top: 16px;
+}
+
+.recent-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.order-preview-card {
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.preview-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.preview-top strong {
+  font-size: 18px;
+}
+
+.preview-status,
+.preview-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  color: var(--text-color-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.preview-time {
+  margin: 0 0 12px;
+  color: var(--text-color-secondary);
+}
+
+.preview-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 @media (max-width: 992px) {
@@ -255,6 +433,10 @@ const handleMenuSelect = (key) => {
   }
 
   .menu-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-grid {
     grid-template-columns: 1fr;
   }
 }

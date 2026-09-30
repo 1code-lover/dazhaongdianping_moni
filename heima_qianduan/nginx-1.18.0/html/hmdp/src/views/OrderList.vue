@@ -7,6 +7,10 @@
             <span class="eyebrow">订单中心</span>
             <h1 class="section-title">我的订单</h1>
             <p class="section-subtitle">查看支付状态、核销码和订单处理结果。</p>
+            <div class="order-overview">
+              <span class="overview-chip">全部 {{ orders.length }}</span>
+              <span class="overview-chip">支持支付 / 取消 / 核销展示</span>
+            </div>
           </div>
         </div>
 
@@ -51,6 +55,10 @@
               <div class="order-main">
                 <h3>{{ order.title }}</h3>
                 <p class="order-time">{{ order.createTime }}</p>
+                <div class="order-tags">
+                  <span class="tag-pill">订单号 {{ order.orderNo }}</span>
+                  <span class="tag-pill">状态 {{ getStatusText(order.status) }}</span>
+                </div>
               </div>
 
               <div class="order-side">
@@ -226,6 +234,27 @@ onMounted(() => {
   padding: 28px;
 }
 
+.order-overview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.overview-chip,
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  color: var(--text-color-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .order-list {
   display: flex;
   flex-direction: column;
@@ -238,6 +267,13 @@ onMounted(() => {
   border-radius: 24px;
   border: 1px solid rgba(15, 23, 42, 0.06);
   background: rgba(255, 255, 255, 0.84);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.order-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 107, 53, 0.18);
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.07);
 }
 
 .order-top {
@@ -273,6 +309,13 @@ onMounted(() => {
 .order-time {
   margin: 0;
   color: var(--text-color-secondary);
+}
+
+.order-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
 }
 
 .order-side {

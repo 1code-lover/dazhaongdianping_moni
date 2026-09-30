@@ -31,6 +31,11 @@
             <el-rate :model-value="shop.score" disabled show-score />
             <span class="price-badge">¥{{ shop.avgPrice || 0 }}/人</span>
           </div>
+          <div class="highlight-row">
+            <span v-if="shop.area" class="highlight-pill">{{ shop.area }}</span>
+            <span class="highlight-pill">评分 {{ shop.score || 0 }}</span>
+            <span class="highlight-pill">支持套餐购买</span>
+          </div>
           <p class="meta-item">
             <el-icon><Location /></el-icon>
             <span>{{ shop.address || '暂无地址信息' }}</span>
@@ -39,6 +44,23 @@
             <el-icon><Clock /></el-icon>
             <span>营业时间：{{ shop.openHours }}</span>
           </p>
+        </div>
+      </section>
+
+      <section class="insight-card section-block">
+        <div class="insight-grid">
+          <article>
+            <strong>适合什么场景</strong>
+            <p>适合本地联调商户详情、套餐购买、订单确认和用户态跳转链路。</p>
+          </article>
+          <article>
+            <strong>当前页适合截图</strong>
+            <p>店铺图、评分、营业时间、价格和套餐区块同时展示，适合 README 或项目介绍页。</p>
+          </article>
+          <article>
+            <strong>建议联调路径</strong>
+            <p>首页 → 商户列表 → 商户详情 → 套餐购买 → 订单确认，这条路径最适合展示系统完整性。</p>
+          </article>
         </div>
       </section>
 
@@ -299,6 +321,25 @@ onMounted(() => {
   font-weight: 700;
 }
 
+.highlight-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+.highlight-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  color: var(--text-color-secondary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .meta-item {
   display: flex;
   align-items: flex-start;
@@ -310,6 +351,36 @@ onMounted(() => {
 
 .combo-card {
   padding: 28px;
+}
+
+.insight-card {
+  padding: 26px 28px;
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.insight-grid article {
+  min-height: 138px;
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.insight-grid strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.insight-grid p {
+  margin: 0;
+  color: var(--text-color-secondary);
+  line-height: 1.8;
 }
 
 .combo-list {
@@ -461,7 +532,8 @@ onMounted(() => {
 
   .hero-card,
   .combo-card,
-  .review-card {
+  .review-card,
+  .insight-card {
     padding: 22px;
   }
 
@@ -477,6 +549,10 @@ onMounted(() => {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+
+  .insight-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

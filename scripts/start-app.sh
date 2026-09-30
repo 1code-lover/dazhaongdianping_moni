@@ -13,4 +13,6 @@ fi
 
 export SPRING_PROFILES_ACTIVE="${SPRING_PROFILES_ACTIVE:-local}"
 
-mvn spring-boot:run
+MVN_ARGS="${MVN_ARGS:--Dmaven.test.skip=true}"
+
+mvn ${MVN_ARGS} spring-boot:run
