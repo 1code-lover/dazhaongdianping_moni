@@ -10,6 +10,7 @@
             <div class="result-meta">
               <span class="meta-chip">结果 {{ shops.length }}</span>
               <span class="meta-chip">{{ route.query.keyword ? `关键词：${route.query.keyword}` : `分类浏览` }}</span>
+              <span v-if="locationLabel" class="meta-chip location-chip">{{ locationLabel }}</span>
             </div>
           </div>
           <div class="search-bar">
@@ -68,6 +69,9 @@
               <div class="shop-bottom">
                 <div class="shop-tags">
                   <span v-if="shop.area" class="info-tag">{{ shop.area }}</span>
+                  <span v-if="shop.distance != null" class="info-tag distance-tag">
+                    距您 {{ formatDistance(shop.distance) }}
+                  </span>
                   <span class="info-tag">评分 {{ shop.score || 0 }}</span>
                 </div>
                 <div class="shop-actions">
@@ -95,6 +99,7 @@ import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Location, Service } from '@element-plus/icons-vue'
 import { getShopsByType, searchShops } from '../api/shop'
+import { getLocation, formatDistance } from '../utils/location'
 
 const route = useRoute()
 const router = useRouter()
@@ -102,6 +107,9 @@ const keyword = ref(route.query.keyword || '')
 const shops = ref([])
 const loading = ref(false)
 const error = ref(false)
+// 定位状态：gps=浏览器定位 default=默认坐标(杭州市中心) ''=未知
+const locationSource = ref('')
+const locationLabel = ref('')
 
 /**
  * 解析商户图片
@@ -134,7 +142,7 @@ const handleSearch = async () => {
 }
 
 /**
- * 拉取商户列表
+ * 拉取商户列表（分类模式携带定位坐标，按距离排序）
  */
 const fetchShops = async () => {
   loading.value = true
@@ -154,7 +162,14 @@ const fetchShops = async () => {
     }
 
     if (typeId) {
-      const res = await getShopsByType(typeId)
+      // 获取定位（首次或缓存过期时解析，默认杭州市中心）
+      const loc = await getLocation()
+      locationSource.value = loc.source
+      locationLabel.value = loc.source === 'gps'
+        ? '📍 已按您的位置排序'
+        : '📍 默认定位：杭州市中心'
+
+      const res = await getShopsByType(typeId, 1, loc.x, loc.y)
       if (res.success) {
         shops.value = res.data || []
       }
@@ -218,6 +233,16 @@ onMounted(() => {
   color: var(--text-color-secondary);
   font-size: 12px;
   font-weight: 700;
+}
+
+.location-chip {
+  color: var(--primary-color, #ff6b35);
+  border-color: rgba(255, 107, 53, 0.25);
+}
+
+.distance-tag {
+  color: var(--primary-color, #ff6b35);
+  background: rgba(255, 107, 53, 0.08);
 }
 
 .shop-items {
