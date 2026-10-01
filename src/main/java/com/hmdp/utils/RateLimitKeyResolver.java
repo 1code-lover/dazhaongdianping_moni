@@ -36,13 +36,21 @@ public class RateLimitKeyResolver {
 
     private String resolvePhone(Object[] args) {
         for (Object arg : args) {
+            // 优先匹配手机号，其次匹配邮箱（target 语义，兼容双通道登录）
             if (arg instanceof String && !RegexUtils.isPhoneInvalid((String) arg)) {
                 return (String) arg;
             }
+            if (arg instanceof String && !RegexUtils.isEmailInvalid((String) arg)) {
+                return (String) arg;
+            }
             if (arg instanceof LoginFormDTO) {
-                String phone = ((LoginFormDTO) arg).getPhone();
-                if (!RegexUtils.isPhoneInvalid(phone)) {
-                    return phone;
+                LoginFormDTO form = (LoginFormDTO) arg;
+                String target = StrUtil.isNotBlank(form.getTarget()) ? form.getTarget() : form.getPhone();
+                if (!RegexUtils.isPhoneInvalid(target)) {
+                    return target;
+                }
+                if (!RegexUtils.isEmailInvalid(target)) {
+                    return target;
                 }
             }
             if (arg instanceof Map) {
@@ -50,9 +58,23 @@ public class RateLimitKeyResolver {
                 if (phone instanceof String && !RegexUtils.isPhoneInvalid((String) phone)) {
                     return (String) phone;
                 }
+                Object target = ((Map<?, ?>) arg).get("target");
+                if (target instanceof String && !RegexUtils.isEmailInvalid((String) target)) {
+                    return (String) target;
+                }
             }
         }
-        throw new IllegalArgumentException("未获取到手机号，无法进行手机号维度限流");
+        throw new IllegalArgumentException("未获取到手机号或邮箱，无法进行登录标识维度限流");
+    }
+
+    /**
+     * 解析客户端真实 IP（兼容反向代理的 X-Forwarded-For / X-Real-IP 头）
+     *
+     * @param request HTTP 请求
+     * @return 客户端 IP
+     */
+    public String resolveClientIp(HttpServletRequest request) {
+        return resolveIp(request);
     }
 
     private String resolveIp(HttpServletRequest request) {

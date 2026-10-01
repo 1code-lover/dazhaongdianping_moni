@@ -11,6 +11,7 @@ import com.hmdp.entity.UserInfo;
 import com.hmdp.enums.LimitType;
 import com.hmdp.service.IUserInfoService;
 import com.hmdp.service.IUserService;
+import com.hmdp.utils.RateLimitKeyResolver;
 import com.hmdp.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -49,15 +50,19 @@ public class UserController {
     private IUserInfoService userInfoService;
 
     @Resource
+    private RateLimitKeyResolver rateLimitKeyResolver;
+
+    @Resource
     private StringRedisTemplate stringRedisTemplate;
 
     /**
-     * 发送手机验证码
-     * 验证码接口优先按手机号限流，并额外附加一个冷却时间
-     * 限流规则：60秒内最多3次，30秒冷却时间
+     * 发送登录验证码
+     * 支持手机号或邮箱（target 自动识别通道；兼容旧 phone 参数）
+     * 接口层限流：60秒内最多3次，30秒冷却时间；业务层另有重发冷却与日上限
      *
-     * @param phone 手机号码
-     * @param session HTTP会话
+     * @param target 登录标识（手机号或邮箱，优先取值）
+     * @param phone  手机号（旧参数兼容）
+     * @param request HTTP请求（用于获取来源IP做日上限控制）
      * @return 验证码发送结果
      */
     @PostMapping("code")
@@ -69,16 +74,19 @@ public class UserController {
             cooldownSeconds = 30,
             message = "验证码发送过于频繁，请稍后再试"
     )
-    public Result sendCode(@RequestParam("phone") String phone, HttpSession session) {
-        return userService.sendCode(phone, session);
+    public Result sendCode(@RequestParam(value = "target", required = false) String target,
+                           @RequestParam(value = "phone", required = false) String phone,
+                           HttpServletRequest request) {
+        String loginTarget = StrUtil.isNotBlank(target) ? target : phone;
+        return userService.sendCode(loginTarget, rateLimitKeyResolver.resolveClientIp(request));
     }
 
     /**
      * 用户登录接口
-     * 先做手机号维度限流，避免被脚本高频尝试
+     * 先做登录标识（手机号/邮箱）维度限流，避免被脚本高频尝试
      * 限流规则：60秒内最多20次
      *
-     * @param loginForm 登录表单数据（包含手机号和验证码）
+     * @param loginForm 登录表单数据（target 或 phone + 验证码）
      * @param session HTTP会话
      * @return 登录结果，成功返回用户Token
      */

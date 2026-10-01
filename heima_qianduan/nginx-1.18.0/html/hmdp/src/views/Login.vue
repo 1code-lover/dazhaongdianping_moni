@@ -5,7 +5,7 @@
         <span class="eyebrow">账号登录</span>
         <h1>登录后，收藏、订单、套餐和个人中心都能无缝联动。</h1>
         <p>
-          使用手机号验证码快速登录，适合本地联调用户态、下单流程、秒杀流程和个人中心页展示。
+          支持手机号或邮箱验证码登录，接 Redis 登录态，便于本地联调用户态、下单流程、秒杀流程和个人中心页展示。
         </p>
 
         <div class="login-highlights">
@@ -29,14 +29,14 @@
           <div class="card-header">
             <div>
               <h2>欢迎回来</h2>
-              <p>输入手机号并完成验证码校验</p>
+              <p>输入手机号或邮箱，完成验证码校验</p>
             </div>
           </div>
         </template>
 
         <el-form :model="form" :rules="rules" ref="formRef" label-position="top">
-          <el-form-item label="手机号" prop="phone">
-            <el-input v-model="form.phone" placeholder="请输入手机号" maxlength="11" />
+          <el-form-item :label="targetLabel" prop="target">
+            <el-input v-model="form.target" :placeholder="targetPlaceholder" maxlength="50" />
           </el-form-item>
 
           <el-form-item label="验证码" prop="code">
@@ -54,7 +54,7 @@
           </el-form-item>
 
           <div class="tip-row">
-            未接入真实短信平台时，可直接通过 Redis 或后端日志查看验证码完成本地测试。
+            {{ tipText }}
           </div>
 
           <el-form-item>
@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { sendCode as sendCodeApi, login as loginApi } from '../api/user'
 import { useUserStore } from '../stores/user'
@@ -82,14 +82,29 @@ const loading = ref(false)
 const countdown = ref(0)
 
 const form = reactive({
-  phone: '',
+  target: '',
   code: ''
 })
 
+// 手机号或邮箱格式（自动识别登录通道）
+const TARGET_PATTERN = /^(1[3-9]\d{9}|[\w.-]+@[\w-]+(\.[\w-]+)+)$/
+
+const isEmail = computed(() => form.target.includes('@'))
+
+const targetLabel = computed(() => (isEmail.value ? '邮箱' : '手机号'))
+
+const targetPlaceholder = computed(() => (isEmail.value ? '请输入邮箱地址' : '请输入手机号或邮箱'))
+
+const tipText = computed(() =>
+  isEmail.value
+    ? '验证码将发送至您的邮箱，2 分钟内有效，请注意查收（可能在垃圾邮件中）。'
+    : '手机号登录：验证码默认输出到后端日志与 Redis；接入邮件通道后可直接使用邮箱登录。'
+)
+
 const rules = {
-  phone: [
-    { required: true, message: '请输入手机号', trigger: 'blur' },
-    { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
+  target: [
+    { required: true, message: '请输入手机号或邮箱', trigger: 'blur' },
+    { pattern: TARGET_PATTERN, message: '手机号或邮箱格式不正确', trigger: 'blur' }
   ],
   code: [
     { required: true, message: '请输入验证码', trigger: 'blur' },
@@ -98,13 +113,17 @@ const rules = {
 }
 
 const sendCode = async () => {
-  if (!form.phone) {
-    ElMessage.warning('请先输入手机号')
+  if (!form.target) {
+    ElMessage.warning('请先输入手机号或邮箱')
+    return
+  }
+  if (!TARGET_PATTERN.test(form.target)) {
+    ElMessage.warning('手机号或邮箱格式不正确')
     return
   }
 
   try {
-    const res = await sendCodeApi(form.phone)
+    const res = await sendCodeApi(form.target)
     if (res.success) {
       ElMessage.success('验证码发送成功')
       countdown.value = 60
@@ -125,7 +144,7 @@ const handleLogin = async () => {
     await formRef.value.validate()
     loading.value = true
 
-    const res = await loginApi(form.phone, form.code)
+    const res = await loginApi(form.target, form.code)
     if (res.success) {
       userStore.setToken(res.data)
       await userStore.fetchUserInfo()

@@ -17,7 +17,15 @@ import javax.servlet.http.HttpSession;
  */
 public interface IUserService extends IService<User> {
 
-    Result sendCode(String phone, HttpSession session);
+    /**
+     * 发送登录验证码
+     * 支持手机号或邮箱（自动识别通道），验证码存 Redis 并由配置的通道下发
+     *
+     * @param target 登录标识（手机号或邮箱）
+     * @param ip     请求来源 IP（用于单日发送上限控制）
+     * @return 发送结果
+     */
+    Result sendCode(String target, String ip);
 
     Result login(LoginFormDTO loginForm, HttpSession session);
 

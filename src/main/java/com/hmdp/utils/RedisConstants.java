@@ -6,6 +6,13 @@ public class RedisConstants {
     public static final String LOGIN_USER_KEY = "login:token:";
     public static final Long LOGIN_USER_TTL = 36000L;
 
+    // 验证码频控与防爆破相关 key
+    public static final String VERIFY_RESEND_KEY = "verify:resend:";
+    public static final String VERIFY_DAY_KEY = "verify:day:";
+    public static final String VERIFY_DAY_IP_KEY = "verify:dayip:";
+    public static final String VERIFY_ATTEMPT_KEY = "verify:attempt:";
+    public static final long VERIFY_DAY_TTL = 86400L;
+
     public static final Long CACHE_NULL_TTL = 2L;
 
     public static final Long CACHE_SHOP_TTL = 30L;

@@ -30,7 +30,15 @@ public class RateLimitAspect {
     @Around("@annotation(rateLimit)")
     public Object doRateLimit(ProceedingJoinPoint joinPoint, RateLimit rateLimit) throws Throwable {
         HttpServletRequest request = getCurrentRequest();
-        String suffix = rateLimitKeyResolver.resolveKeySuffix(rateLimit.limitType(), joinPoint.getArgs(), request);
+        String suffix;
+        try {
+            suffix = rateLimitKeyResolver.resolveKeySuffix(rateLimit.limitType(), joinPoint.getArgs(), request);
+        } catch (IllegalArgumentException e) {
+            // 无法从参数解析限流标识（如格式非法的手机号/邮箱）时，放行交给业务层校验并返回友好提示
+            log.warn("Rate limit key resolve failed, proceed without limiting, uri={}, reason={}",
+                    request.getRequestURI(), e.getMessage());
+            return joinPoint.proceed();
+        }
         String countKey = buildCountKey(rateLimit.keyPrefix(), rateLimit.pathKey() ? request.getRequestURI() : "", suffix);
 
         if (rateLimit.cooldownSeconds() > 0) {
