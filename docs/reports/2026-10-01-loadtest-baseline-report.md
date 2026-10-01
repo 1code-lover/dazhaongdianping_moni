@@ -75,3 +75,26 @@ redis-cli get seckill:stock:12
 ```
 
 > 压测账号：`tb_user` 中 nick_name 以 `load_user_` 开头的 600 个；`scripts/tokens.txt` 已 gitignore。
+
+## 6. 附录：MySQL TCP 并发慢根因排查实录（2026-10-01 深夜场）
+
+**症状**：应用经 TCP(127.0.0.1) 并发查询 MySQL 时，`SELECT COUNT(*)` 类语句在并发≥5 时从 0.8ms 劣化到 37~100ms；走 Unix socket 无此问题。
+
+**排除法结论**：
+
+| 假设 | 结果 |
+|------|------|
+| JDBC 驱动版本（5.1.47 太老） | ❌ 换 8.0.33 依旧 99ms |
+| MyBatis-Plus / Hikari 层 | ❌ 裸 JDBC 复现 |
+| 表统计信息异常 | ❌ ANALYZE 无效；12 行表 EXPLAIN ANALYZE 仅 0.4ms |
+| 孤儿进程/CPU 饱和污染 | ❌ 清理后（load 0.36）稳定复现 |
+| 回环网络本身 | ❌ 裸 TCP echo 20 并发 0.88ms |
+| 事务历史/锁 | ❌ History list length 0，无 MDL/行锁 |
+
+**已确认的规律**：
+- 并发梯度（pymysql，TCP）：1线程 0.55ms → 2线程 0.82ms → **5线程 37ms（相变）** → 20线程 97ms
+- **表特异性**：`COUNT(*)` 打在单页表（tb_blog/tb_shop_type，16KB）上慢；打在 5 页表（tb_user）上 20 并发仅 2.1ms
+- C 客户端（mysqlslap）同场景约 6.5ms，仅为 Java/Python 客户端的 1/15
+- tcpdump 证实延迟在服务端响应阶段
+
+**最终判断**：疑似云主机内核/虚拟化与 InnoDB 单页并发读的交互问题（与业务代码无关），升级驱动/ANALYZE/换表结构均无效。**应用层已完成规避**：热路径 COUNT 消除（searchCount=false）、N+1 消除、搜索走 Redis 缓存。遗留表如再次出现类似症状，首选应用层规避，其次考虑 MySQL 升版本或迁移宿主机验证。
