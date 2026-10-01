@@ -14,6 +14,13 @@ spring:
     url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/hmdp?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:}
+    hikari:
+      # 压测调优：默认10偏小，高并发写链路会争抢连接（P0-2）
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:10}
+      connection-timeout: 3000
+      idle-timeout: 600000
+      max-lifetime: 1800000
   servlet:
     multipart:
       max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
@@ -24,12 +31,26 @@ spring:
     password: ${REDIS_PASSWORD:}
     lettuce:
       pool:
-        max-active: 10
-        max-idle: 10
-        min-idle: 1
+        # 压测调优：原10偏小，读接口高并发下连接等待明显（P0-2）
+        max-active: ${REDIS_POOL_MAX_ACTIVE:50}
+        max-idle: ${REDIS_POOL_MAX_IDLE:50}
+        min-idle: ${REDIS_POOL_MIN_IDLE:5}
         time-between-eviction-runs: 10s
   jackson:
     default-property-inclusion: non_null
+  # 邮件发送配置（spring-boot-starter-mail），用于验证码邮箱通道
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
   elasticsearch:
     rest:
       uris: ${ES_URIS:http://localhost:9200}
@@ -61,6 +82,16 @@ app:
   security:
     # 逗号分隔的管理员用户 ID；空配置时后台接口默认拒绝访问
     admin-user-ids: ${ADMIN_USER_IDS:}
+  # 登录验证码配置：通道(log/email) 与频控阈值
+  verify-code:
+    channel: ${VERIFY_CODE_CHANNEL:log}
+    resend-interval-seconds: ${VERIFY_CODE_RESEND_INTERVAL:60}
+    max-per-target-per-day: ${VERIFY_CODE_MAX_PER_TARGET:10}
+    max-per-ip-per-day: ${VERIFY_CODE_MAX_PER_IP:20}
+    max-verify-attempts: ${VERIFY_CODE_MAX_ATTEMPTS:5}
+  # 邮件发件配置（channel=email 时必填：username + password 的 SMTP 授权码）
+  mail:
+    from: ${MAIL_FROM:}
   upload:
     dir: ${UPLOAD_DIR:./uploads/imgs/}
     max-size-mb: ${UPLOAD_MAX_SIZE_MB:5}

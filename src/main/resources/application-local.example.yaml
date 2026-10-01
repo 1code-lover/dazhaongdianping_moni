@@ -13,6 +13,19 @@ spring:
       default-topic: seckill-order
     consumer:
       group-id: seckill-order-g1
+  # 邮箱验证码通道：将 channel 改为 email 并填写发件邮箱与 SMTP 授权码（如 QQ 邮箱）
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: your-qq-number@qq.com
+    password: your-smtp-authorization-code
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
 
 server:
   port: 8081
@@ -21,6 +34,16 @@ app:
   security:
     # 通过 ADMIN_USER_IDS 配置逗号分隔的管理员用户 ID；空值会默认拒绝后台访问
     admin-user-ids: ${ADMIN_USER_IDS:}
+  # 验证码通道：log（日志，默认）或 email（SMTP 邮件，需配好上面的 spring.mail）
+  verify-code:
+    channel: log
+    resend-interval-seconds: 60
+    max-per-target-per-day: 10
+    max-per-ip-per-day: 20
+    max-verify-attempts: 5
+  # channel=email 时生效，默认与发件邮箱一致
+  mail:
+    from: your-qq-number@qq.com
   upload:
     dir: ${UPLOAD_DIR:./uploads/imgs/}
     max-size-mb: ${UPLOAD_MAX_SIZE_MB:5}
