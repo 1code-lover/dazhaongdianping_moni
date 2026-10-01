@@ -29,12 +29,16 @@
 | 2026-06-16 | 评价系统 | `spec/2026-06-16-review-spec.md` | 已完成 | 已实施 |
 | 2026-06-21 | 前端UI优化 | `spec/2026-06-21-frontend-ui-spec.md` | 已完成 | 已实施，对应 plan 见 docs/superpowers/plans/ |
 | 2026-06-30 | 前端优化 | `spec/2026-06-30-frontend-optimization-spec.md` | 待评审 | 基于当前前端代码审查整理 |
+| 2026-10-01 | 邮箱验证码登录 | `spec/2026-10-01-email-verify-code-spec.md` | 已完成 | 已实施，双通道验证码 + 频控防护 |
+| 2026-10-01 | 压测短板修复 | `spec/2026-10-01-feed-nplus1-optimization-spec.md` | 已完成 | Feed N+1 + 连接池调优，基于压测基线报告 |
 
 ### Plan
 
 | 日期 | 主题 | 文件 | 状态 | 备注 |
 |------|------|------|------|------|
 | 2026-06-30 | 前端优化 | `plan/2026-06-30-frontend-optimization-plan.md` | 待实施 | 基于已评审 spec 编写 |
+| 2026-10-01 | 邮箱验证码登录 | `plan/2026-10-01-email-verify-code-plan.md` | 已完成 | 已实施并验证 |
+| 2026-10-01 | 压测短板修复 | `plan/2026-10-01-feed-nplus1-optimization-plan.md` | 已完成 | 已实施并复测 |
 
 ### 历史 Plan (已迁移到 docs/superpowers/plans/)
 
