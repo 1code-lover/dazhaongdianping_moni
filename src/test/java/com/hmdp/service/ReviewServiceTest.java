@@ -1,5 +1,6 @@
 package com.hmdp.service;
 
+import cn.hutool.core.util.StrUtil;
 import com.hmdp.dto.ReviewDTO;
 import com.hmdp.dto.ReviewReplyDTO;
 import com.hmdp.dto.Result;
@@ -102,7 +103,7 @@ class ReviewServiceTest {
         dto.setOrderId(ORDER_ID_CONTENT_TOO_LONG);
         dto.setOrderType(2);
         dto.setScore(4);
-        dto.setContent("a".repeat(501)); // 超过500字
+        dto.setContent(StrUtil.repeat("a", 501)); // 超过500字
 
         // when
         Result result = reviewService.submitReview(dto);
@@ -169,7 +170,7 @@ class ReviewServiceTest {
         // given
         ReviewReplyDTO dto = new ReviewReplyDTO();
         dto.setReviewId(EXISTING_REVIEW_ID);
-        dto.setReply("a".repeat(201)); // 超过200字
+        dto.setReply(StrUtil.repeat("a", 201)); // 超过200字
 
         // when
         Result result = reviewService.replyReview(dto);

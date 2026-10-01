@@ -1,5 +1,6 @@
 package com.hmdp.service.chat;
 
+import cn.hutool.core.util.StrUtil;
 import com.hmdp.enums.IntentType;
 import com.hmdp.service.impl.chat.ContentFilterImpl;
 import com.hmdp.service.impl.chat.IntentRouterImpl;
@@ -72,7 +73,7 @@ class ChatServiceTest {
     
     @Test
     void testLongInput() {
-        String longInput = "a".repeat(501);
+        String longInput = StrUtil.repeat("a", 501);
         assertFalse(contentFilter.isUserInputSafe(longInput));
     }
 }

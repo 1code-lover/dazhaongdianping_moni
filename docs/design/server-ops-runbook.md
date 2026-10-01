@@ -37,12 +37,14 @@ tail -f /var/log/hmdp-health.log       # 巡检记录
 # app.log 已配 logrotate（每日轮转保留7天）
 ```
 
-## 3. 监控现状
+## 3. 监控与告警
 
 - **应用层**：`/actuator/health`、`/actuator/prometheus`（Micrometer，含秒杀/缓存指标）
 - **巡检**：`scripts/health-check.sh`（cron 每小时）记录 后端/前端/Redis/MySQL/ES/Kafka/磁盘/负载 到 `/var/log/hmdp-health.log`
+- **飞书告警**：任一组件异常或磁盘 ≥95% 时推送飞书群机器人。配置：飞书群 → 设置 → 群机器人 → 添加「自定义机器人」→ 把 webhook 地址写入 `.env` 的 `FEISHU_WEBHOOK=`（参照 `.env.example`），无需重启
+- **数据库备份**：`scripts/backup-db.sh`（cron 每日 03:30）mysqldump 压缩备份到 `backups/`，保留 7 天（已 gitignore）
 - **进程自愈**：全部 systemd/docker `restart=always`，实测 kill -9 后端 17s 自愈
-- **待办**：无告警通知渠道（可加钉钉/邮件 webhook）；Prometheus 未被采集（如需图表需装 Prometheus+Grafana）
+- **待办**：Prometheus 未被采集（如需图表需装 Prometheus+Grafana）
 
 ## 4. 容量与风险
 
