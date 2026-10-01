@@ -13,6 +13,10 @@ public class RedisConstants {
     public static final String VERIFY_ATTEMPT_KEY = "verify:attempt:";
     public static final long VERIFY_DAY_TTL = 86400L;
 
+    // 商户搜索缓存（ES 结果短 TTL 缓存，商户变更时主动清除）
+    public static final String CACHE_SHOP_SEARCH_KEY = "cache:shop-search:";
+    public static final long CACHE_SHOP_SEARCH_TTL = 30L;
+
     public static final Long CACHE_NULL_TTL = 2L;
 
     public static final Long CACHE_SHOP_TTL = 30L;
