@@ -16,14 +16,18 @@ import com.hmdp.service.IFollowService;
 import com.hmdp.service.IUserService;
 import com.hmdp.utils.SystemConstants;
 import com.hmdp.utils.UserHolder;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -52,17 +56,17 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
 
     @Override
     public Result queryHotBlog(Integer current) {
-        // 根据用户查询
-        Page<Blog> page = query()
+        // 热门博客只需当前页列表，无需总数统计；
+        // searchCount(false) 跳过 MyBatis-Plus 每次请求都执行的 COUNT 查询（压测发现其在本环境并发下异常缓慢）
+        Page<Blog> page = new Page<>(current, SystemConstants.MAX_PAGE_SIZE);
+        page.setSearchCount(false);
+        page = query()
                 .orderByDesc("liked")
-                .page(new Page<>(current, SystemConstants.MAX_PAGE_SIZE));
+                .page(page);
         // 获取当前页数据
         List<Blog> records = page.getRecords();
-        // 查询用户
-        records.forEach(blog -> {
-            this.queryBlogUser(blog);
-            this.isBlogLiked(blog);
-        });
+        // 批量填充用户信息与点赞状态（避免 N+1 往返）
+        fillBlogDetails(records);
         return Result.ok(records);
     }
 
@@ -199,12 +203,8 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
         String idStr = StrUtil.join(",", ids);
         List<Blog> blogs = query().in("id", ids).last("ORDER BY FIELD(id," + idStr + ")").list();
 
-        for (Blog blog : blogs) {
-            // 5.1.查询blog有关的用户
-            queryBlogUser(blog);
-            // 5.2.查询blog是否被点赞
-            isBlogLiked(blog);
-        }
+        // 5.1 批量填充用户信息与点赞状态（避免 N+1 往返）
+        fillBlogDetails(blogs);
 
         // 6.封装并返回
         ScrollResult r = new ScrollResult();
@@ -220,5 +220,66 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
         User user = userService.getById(userId);
         blog.setName(user.getNickName());
         blog.setIcon(user.getIcon());
+    }
+
+    /**
+     * 批量填充博客列表的用户信息与当前登录用户的点赞状态
+     * 将逐条的 2N+1 次数据库/Redis 往返压缩为 3 次：
+     * MySQL 一次 IN 批量查用户 + Redis 一次 Pipeline 批量查点赞 + 内存填充
+     *
+     * @param blogs 博客列表（本方法内直接修改对象属性）
+     */
+    private void fillBlogDetails(List<Blog> blogs) {
+        if (blogs == null || blogs.isEmpty()) {
+            return;
+        }
+        // 1.收集去重的用户ID，一次 IN 查询并转为 id -> 用户 映射
+        List<Long> userIds = blogs.stream().map(Blog::getUserId).distinct().collect(Collectors.toList());
+        Map<Long, UserDTO> userMap = userIds.isEmpty() ? Collections.emptyMap()
+                : userService.listByIds(userIds).stream()
+                .map(user -> BeanUtil.copyProperties(user, UserDTO.class))
+                .collect(Collectors.toMap(UserDTO::getId, u -> u, (a, b) -> a));
+        // 2.获取当前登录用户（可能未登录），批量查询点赞状态
+        UserDTO loginUser = UserHolder.getUser();
+        Map<Long, Boolean> likedMap = batchCheckLiked(blogs, loginUser);
+        // 3.循环填充（纯内存操作）
+        for (Blog blog : blogs) {
+            UserDTO user = userMap.get(blog.getUserId());
+            if (user != null) {
+                blog.setName(user.getNickName());
+                blog.setIcon(user.getIcon());
+            }
+            if (loginUser != null) {
+                blog.setIsLike(likedMap.getOrDefault(blog.getId(), false));
+            }
+        }
+    }
+
+    /**
+     * 通过 Redis Pipeline 一次性批量判断当前用户对一批博客的点赞状态
+     * 结果与命令发送顺序一致，按序映射回博客ID
+     *
+     * @param blogs      博客列表
+     * @param loginUser  当前登录用户，未登录时返回空 Map
+     * @return 博客ID -> 是否已点赞
+     */
+    private Map<Long, Boolean> batchCheckLiked(List<Blog> blogs, UserDTO loginUser) {
+        if (loginUser == null) {
+            return Collections.emptyMap();
+        }
+        byte[] member = loginUser.getId().toString().getBytes(StandardCharsets.UTF_8);
+        // 一次 Pipeline 发送所有 ZSCORE 命令，单次网络往返
+        List<Object> results = stringRedisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            for (Blog blog : blogs) {
+                byte[] key = (BLOG_LIKED_KEY + blog.getId()).getBytes(StandardCharsets.UTF_8);
+                connection.zSetCommands().zScore(key, member);
+            }
+            return null;
+        });
+        Map<Long, Boolean> likedMap = new HashMap<>(blogs.size());
+        for (int i = 0; i < blogs.size() && i < results.size(); i++) {
+            likedMap.put(blogs.get(i).getId(), results.get(i) != null);
+        }
+        return likedMap;
     }
 }
