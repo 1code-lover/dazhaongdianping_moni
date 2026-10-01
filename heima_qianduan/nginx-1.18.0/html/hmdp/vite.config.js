@@ -13,6 +13,26 @@ export default defineConfig({
       }
     }
   },
+  // 生产预览配置：对外通过已放行的 80 端口访问，静态资源 + API 反代到本机 8081
+  preview: {
+    port: 80,
+    host: '0.0.0.0',
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      '/imgs': {
+        target: 'http://localhost:8081',
+        changeOrigin: true
+      },
+      '/blogs': {
+        target: 'http://localhost:8081',
+        changeOrigin: true
+      }
+    }
+  },
   build: {
     outDir: 'dist',
     rollupOptions: {
