@@ -52,7 +52,7 @@ tail -f /var/log/hmdp-health.log       # 巡检记录
 ## 3.5 CI/CD 自动部署
 
 - **流水线**：`.github/workflows/deploy.yml`，push 到 master 自动触发
-- **流程**：单元测试（观测模式，不阻塞）→ 后端打包 → 前端构建 → rsync 产物到服务器 → `systemctl restart hmdp-backend` → 经 nginx 80 端口健康验证
+- **流程**：单元测试（**硬门禁**，62 个纯单测 JDK8 全绿，integration/manual 分层显式排除）→ 后端打包 → 前端构建 → rsync 产物到服务器 → `systemctl restart hmdp-backend` → 经 nginx 80 端口健康验证
 - **凭据**：GitHub Secret `DEPLOY_SSH_KEY`（专用 ed25519 私钥，公钥在服务器的 `/root/.ssh/authorized_keys`）
 - **注意**：8081 仅内网开放，外部验证一律走 `http://8.156.94.216/api/...`
 
