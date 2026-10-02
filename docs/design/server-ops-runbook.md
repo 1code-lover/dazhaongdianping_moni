@@ -11,14 +11,17 @@
 | Redis 6.2 | systemd `redis-hmdp` | ✅ enabled | 源码安装，配置 `/usr/local/redis/redis-6.2.14/redis.conf` |
 | ES/Kafka/ZK | Docker | ✅ `restart=always` | `docker compose up -d zookeeper kafka elasticsearch`（勿全量 up，避免与原生 MySQL/Redis 撞端口） |
 | 后端 :8081 | systemd `hmdp-backend` | ✅ enabled | 读 `/home/dazhaongdianping_moni/.env`，新 JDK 8u504，崩溃 5s 自动拉起 |
-| 前端 :80 | systemd `hmdp-frontend` | ✅ enabled | vite preview 托管 dist，反代 `/api`、`/imgs`、`/blogs` |
+| 前端 :80 | systemd `hmdp-frontend` nginx | ✅ enabled | nginx 托管 dist + 反代 `/api`、`/imgs`、`/blogs`（2026-10-02 由 vite preview 切换，更稳） |
 | 前端 dev :3000 | 手动 | ❌ | `npm run dev -- --host 0.0.0.0`，仅开发调试用 |
+
+> **HTTPS 待办**：浏览器定位 API 仅安全上下文可用，对外 HTTP 访问时定位自动降级为杭州市中心。如需真实 GPS：申请域名（sslip.io/DuckDNS 等免费方案经实测 LE 多视角验证不稳，建议买个 ¥10/年 便宜域名）→ certbot 申请证书 → nginx 加 443。nginx 已就绪，加证书即可。
 
 ## 2. 常用操作
 
 ```bash
 # 服务管理
-systemctl status|restart hmdp-backend hmdp-frontend redis-hmdp
+systemctl status|restart hmdp-backend redis-hmdp
+nginx -t && systemctl reload nginx   # 前端
 docker ps   # ES/Kafka/ZK
 
 # 改配置（.env 含 DB/Redis/邮件配置）后重启生效
@@ -26,7 +29,7 @@ systemctl restart hmdp-backend
 
 # 前端发版：构建 + 重启
 cd heima_qianduan/nginx-1.18.0/html/hmdp && npm run build
-systemctl restart hmdp-frontend
+# nginx 直接读 dist 目录，构建完成即生效（无需重启）
 
 # 健康巡检（每小时整点自动执行，结果在 /var/log/hmdp-health.log）
 bash scripts/health-check.sh
