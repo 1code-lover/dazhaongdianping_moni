@@ -68,10 +68,10 @@ jobs:
             heima_qianduan/nginx-1.18.0/html/hmdp/dist/ \
             root@8.156.94.216:/home/dazhaongdianping_moni/heima_qianduan/nginx-1.18.0/html/hmdp/dist/
 
-      - name: 部署结果验证
+      - name: 部署结果验证（经 nginx 80 端口，8081 仅内网开放）
         run: |
-          sleep 20
+          sleep 25
           curl -s -m 30 -o /dev/null -w "backend health: %{http_code}\n" \
-            http://8.156.94.216:8081/actuator/health
+            http://8.156.94.216/api/actuator/health
           curl -s -m 30 -o /dev/null -w "frontend: %{http_code}\n" \
             http://8.156.94.216/
