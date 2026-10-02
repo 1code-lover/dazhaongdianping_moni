@@ -8,6 +8,7 @@ import com.hmdp.service.impl.ReviewServiceImpl;
 import com.hmdp.utils.UserHolder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -18,8 +19,11 @@ import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 评价服务单元测试
+ * 评价服务测试（integration 分层）
+ * 基于 JdbcTemplate 数据夹具 + 真实 Service，需要外部 MySQL/Redis，
+ * 由 -Pintegration-test 显式执行；默认快速分层不加载 Spring 上下文
  */
+@Tag("integration")
 @SpringBootTest
 class ReviewServiceTest {
 

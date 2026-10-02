@@ -8,7 +8,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    continue-on-error: true   # 默认测试需外设的分层仍在治理中，先观测不阻塞部署
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
