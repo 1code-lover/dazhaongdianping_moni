@@ -98,3 +98,20 @@ redis-cli get seckill:stock:12
 - tcpdump 证实延迟在服务端响应阶段
 
 **最终判断**：疑似云主机内核/虚拟化与 InnoDB 单页并发读的交互问题（与业务代码无关），升级驱动/ANALYZE/换表结构均无效。**应用层已完成规避**：热路径 COUNT 消除（searchCount=false）、N+1 消除、搜索走 Redis 缓存。遗留表如再次出现类似症状，首选应用层规避，其次考虑 MySQL 升版本或迁移宿主机验证。
+
+## 7. 附录：秒杀链路消费端优化对比（2026-10-02）
+
+**背景**：入口受理 ~650 RPS 后，2000 单落库需 20s（~100 单/s），消费端成为瓶颈。
+
+| 优化项 | 前 | 后 |
+|--------|----|----|
+| seckill-order 分区数 | 1 | 8 |
+| 消费并发 | 1（KafkaConfig 硬编码 setConcurrency(1)，yaml 配置未生效） | 8（读取 app.kafka.consumer.concurrency） |
+| 落库吞吐 | ~100 单/s | ~155 单/s |
+| 2000 单落库耗时 | 20s | 13s |
+
+**修复代码**：`KafkaConfig` 硬编码并发为 1 且覆盖了 Spring Boot 自动配置，改为 `@Value` 注入；topic 重建 8 分区（1 分区时并发上限为 1）。
+
+**剩余瓶颈**：所有订单更新同一条库存行，InnoDB 行锁使落库串行化（~155 单/s 天花板）。进一步提速需 DB 层库存分桶（分段库存），属架构级改造，演示场景暂不需要。
+
+**工具**：`scripts/loadtest_seckill_keepalive.py`（连接复用版压测，消除客户端建连开销后入口 510 → 650 RPS）。
