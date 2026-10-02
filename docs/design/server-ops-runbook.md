@@ -49,6 +49,13 @@ tail -f /var/log/hmdp-health.log       # 巡检记录
 - **进程自愈**：全部 systemd/docker `restart=always`，实测 kill -9 后端 17s 自愈
 - **待办**：Prometheus 未被采集（如需图表需装 Prometheus+Grafana）
 
+## 3.5 CI/CD 自动部署
+
+- **流水线**：`.github/workflows/deploy.yml`，push 到 master 自动触发
+- **流程**：单元测试（观测模式，不阻塞）→ 后端打包 → 前端构建 → rsync 产物到服务器 → `systemctl restart hmdp-backend` → 经 nginx 80 端口健康验证
+- **凭据**：GitHub Secret `DEPLOY_SSH_KEY`（专用 ed25519 私钥，公钥在服务器的 `/root/.ssh/authorized_keys`）
+- **注意**：8081 仅内网开放，外部验证一律走 `http://8.156.94.216/api/...`
+
 ## 4. 容量与风险
 
 | 项目 | 现状 | 阈值建议 |
