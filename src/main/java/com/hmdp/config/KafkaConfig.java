@@ -90,18 +90,24 @@ public class KafkaConfig {
      *
      * @KafkaListener 注解默认使用这个工厂创建监听容器。
      * 核心配置：
+     *   - 并发数：读 app.kafka.consumer.concurrency（默认1，压测环境经 .env 调至8）
      *   - 手动立即ACK（MANUAL_IMMEDIATE）
      *   - 失败重试3次（SeekToCurrentErrorHandler + FixedBackOff）
      *   - 死信队列（DeadLetterPublishingRecoverer）
+     *
+     * 【并发与顺序性说明】
+     *   Kafka 的顺序性保证粒度是分区：并发数为 N 时，每个分区仍由固定单线程处理，
+     *   不会破坏分区内有序；跨分区本就无序。幂等由订单唯一索引兜底，重复消费安全。
      */
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory(
             ConsumerFactory<String, String> consumerFactory,
-            KafkaTemplate<String, String> kafkaTemplate) {
+            KafkaTemplate<String, String> kafkaTemplate,
+            @Value("${app.kafka.consumer.concurrency:1}") Integer concurrency) {
         ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
-        // 并发数设为1，保证同一分区消息顺序处理
-        factory.setConcurrency(1);
+        // 消费并发：须与 topic 分区数匹配（分区数 < 并发数时多出的线程空闲）
+        factory.setConcurrency(concurrency);
 
         // ========== 手动立即ACK ==========
         // 收到消息后立即ACK，不等待批量处理
