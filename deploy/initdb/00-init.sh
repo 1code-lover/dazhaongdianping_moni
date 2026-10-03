@@ -23,6 +23,7 @@ for f in \
   voucher_order_fail_task.sql \
   voucher_order_unique_index.sql \
   user_email_column.sql \
+  chat_faq_expand.sql \
   seed_demo_data.sql ; do
   if [ -f "$DB_DIR/$f" ]; then
     echo "[init]   -> $f"

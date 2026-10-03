@@ -102,8 +102,16 @@ public class ChatServiceImpl implements ChatService {
             long duration = System.currentTimeMillis() - startTime;
 
             if (reply == null) {
-                reply = fallbackHandler.handleFallback(userMessage, intent);
-                log.info("AI调用失败，执行降级处理");
+                // 降级第一层：FAQ 直达（无大模型时知识库直接回答）
+                String faqAnswer = knowledgeBase.matchFaq(userMessage);
+                if (faqAnswer != null) {
+                    reply = faqAnswer;
+                    log.info("AI不可用，FAQ直达回答: {}", intent);
+                } else {
+                    // 降级第二层：意图兜底话术
+                    reply = fallbackHandler.handleFallback(userMessage, intent);
+                    log.info("AI调用失败且无FAQ命中，执行兜底话术");
+                }
             }
 
             if (!contentFilter.isAiOutputSafe(reply)) {
