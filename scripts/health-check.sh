@@ -8,14 +8,16 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOG=/var/log/hmdp-health.log
 TS=$(date '+%F %T')
 
-# 加载飞书 webhook（若已配置）
+# 从 .env 加载飞书 webhook 与 Redis 密码（.env 不入库）
 if [[ -f "${PROJECT_DIR}/.env" ]]; then
   FEISHU_WEBHOOK=$(grep '^FEISHU_WEBHOOK=' "${PROJECT_DIR}/.env" | cut -d= -f2- | tr -d "'" | tr -d '"')
+  REDIS_PASSWORD=$(grep '^REDIS_PASSWORD=' "${PROJECT_DIR}/.env" | cut -d= -f2- | tr -d "'" | tr -d '"')
 fi
+REDIS_PASSWORD=${REDIS_PASSWORD:-}
 
 backend=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:8081/actuator/health 2>/dev/null || echo 000)
 frontend=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1/ 2>/dev/null || echo 000)
-redis=$(redis-cli -a 4d05a61de1d44594b2e0bf45facda0b3 ping 2>/dev/null || echo FAIL)
+redis=$(redis-cli -a "${REDIS_PASSWORD}" ping 2>/dev/null || echo FAIL)
 mysql=$(mysqladmin -u root status >/dev/null 2>&1 && echo OK || echo FAIL)
 es=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:9200 2>/dev/null || echo 000)
 kafka=$(docker ps --filter name=hmdp-kafka --format '{{.Status}}' 2>/dev/null | grep -q Up && echo UP || echo DOWN)
