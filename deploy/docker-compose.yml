@@ -1,0 +1,123 @@
+# ============================================================================
+# hmdp 全栈一体化部署（可移植版）—— 任意装有 Docker 的主机一键起全套
+#
+# 用法：
+#   1. cp .env.example .env  并填写密码/邮箱等（FEISHU_WEBHOOK 可选）
+#   2. sysctl -w vm.max_map_count=262144   # ES 需要，重启后需重设或写 /etc/sysctl.d
+#   3. docker compose -f deploy/docker-compose.yml up -d --build
+#   4. 访问 http://服务器IP/  （前端端口可用 HMDP_HTTP_PORT 覆盖）
+#
+# 与仓库根目录 docker-compose.yml 的区别：根目录仅中间件（本地开发），
+# 本文件含应用与数据库初始化，面向服务器交付。
+# ============================================================================
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: hmdp-mysql-c
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?请在 .env 配置 DB_ROOT_PASSWORD}
+      DB_PASSWORD: ${DB_PASSWORD:?请在 .env 配置 DB_PASSWORD}
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --sql-mode=NO_ENGINE_SUBSTITUTION
+      - --default-authentication-plugin=mysql_native_password
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # 库脚本挂载为只读，由 00-init.sh 按序导入（仅首次建卷时执行）
+      - ../src/main/resources/db:/docker-entrypoint-initdb.d/sql:ro
+      - ./initdb/00-init.sh:/docker-entrypoint-initdb.d/00-init.sh:ro
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" ping --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:6.2-alpine
+    container_name: hmdp-redis-c
+    command: redis-server --requirepass ${REDIS_PASSWORD:?请在 .env 配置 REDIS_PASSWORD}
+    environment:
+      # 供 healthcheck 使用（与 command 中的密码一致）
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  elasticsearch:
+    image: elasticsearch:7.6.2
+    container_name: hmdp-es-c
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    restart: always
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: hmdp-zookeeper-c
+    restart: always
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: hmdp-kafka-c
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+    restart: always
+
+  backend:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: hmdp-backend-c
+    env_file:
+      - ../.env
+    environment:
+      # 覆盖 .env 中的本地地址为容器网络服务名
+      DB_URL: jdbc:mysql://mysql:3306/hmdp?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      DB_USERNAME: hmdp
+      REDIS_HOST: redis
+      ES_URIS: http://elasticsearch:9200
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      UPLOAD_DIR: /app/uploads/imgs/
+    volumes:
+      - upload-data:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+
+  frontend:
+    build:
+      context: ../heima_qianduan/nginx-1.18.0/html/hmdp
+      dockerfile: Dockerfile
+    container_name: hmdp-frontend-c
+    ports:
+      - "${HMDP_HTTP_PORT:-80}:80"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  mysql-data:
+  redis-data:
+  es-data:
+  upload-data:

@@ -29,6 +29,7 @@
 - **登录方式**：支持手机号或邮箱验证码登录。演示环境走邮箱通道（SMTP 免费），输入自己的邮箱 → 收码登录；未配置邮箱时验证码通道可切换为日志模式
 - **压测成绩**：秒杀链路 1000/1000 订单精确售罄（零超卖、零重复）；热门博客接口经 N+1 治理后吞吐提升 5 倍（82 → 406 RPS）
 - **运维能力**：进程崩溃 17s 自愈、每小时七项指标健康巡检、异常飞书群告警、MySQL 每日备份（详见 `docs/design/server-ops-runbook.md`）
+- **一键迁移**：全栈容器化交付（`deploy/docker-compose.yml`），任意 Docker 主机 `git clone + 填 .env + compose up` 5 分钟重建全套（含数据库自动初始化），详见 [`docs/design/migration-guide.md`](docs/design/migration-guide.md)
 
 > 环境说明：HTTP 访问下浏览器定位不可用，附近商户功能自动降级为"杭州市中心"定位（演示数据均位于杭州）。
 
