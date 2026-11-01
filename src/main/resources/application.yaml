@@ -14,6 +14,19 @@ spring:
     url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/hmdp?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:}
+  mail:
+    # 邮箱 SMTP 发信：username 为邮箱地址，password 填邮箱授权码（非登录密码），均走环境变量
+    host: ${MAIL_HOST:smtp.163.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_AUTH_CODE:}
+    default-encoding: UTF-8
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.ssl.enable: true
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
   servlet:
     multipart:
       max-file-size: ${UPLOAD_MAX_FILE_SIZE:5MB}
@@ -65,6 +78,31 @@ app:
     dir: ${UPLOAD_DIR:./uploads/imgs/}
     max-size-mb: ${UPLOAD_MAX_SIZE_MB:5}
     allowed-extensions: jpg,jpeg,png,webp
+  notify:
+    enabled: ${NOTIFY_ENABLED:true}
+    mail:
+      critical-keywords: 超卖,库存不一致,熔断,宕机,资损,OOM
+      warning-keywords: 积压,延迟升高,重试失败,慢查询,磁盘告警
+    dingtalk:
+      enabled: ${DINGTALK_ENABLED:true}
+      webhook: ${DINGTALK_WEBHOOK:}
+    mail-reader:
+      enabled: ${MAIL_READER_ENABLED:false}
+      host: ${MAIL_IMAP_HOST:imap.163.com}
+      port: ${MAIL_IMAP_PORT:993}
+      folder: INBOX
+      poll-interval-ms: ${MAIL_READER_POLL_MS:60000}
+      max-mails-per-poll: 20
+      mark-as-read: true
+    mail-sender:
+      enabled: ${MAIL_SENDER_ENABLED:true}
+      to: ${MAIL_TO:}
+    phone-alarm:
+      enabled: ${PHONE_ALARM_ENABLED:false}
+      adb-path: ${PHONE_ALARM_ADB:adb}
+      device-serial: ${PHONE_ALARM_SERIAL:}
+      clock-package: com.android.deskclock
+      delay-minutes: 5
   kafka:
     relay:
       consumer-name: ${KAFKA_RELAY_CONSUMER_NAME:}

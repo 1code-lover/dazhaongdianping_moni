@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>邮件告警弹窗演示</title>
+    <style>
+        body { font-family: "Microsoft YaHei", sans-serif; max-width: 720px; margin: 30px auto; color: #333; }
+        h1 { font-size: 20px; }
+        .toolbar { margin: 16px 0; }
+        button { padding: 8px 16px; margin-right: 8px; cursor: pointer; }
+        #status { font-weight: bold; }
+        .connected { color: #1a7f37; }
+        .disconnected { color: #cf222e; }
+        ul { padding-left: 0; list-style: none; }
+        li { padding: 10px 12px; border-left: 4px solid #999; background: #f6f8fa; margin-bottom: 8px; border-radius: 4px; }
+        li.CRITICAL { border-color: #cf222e; }
+        li.WARNING { border-color: #d4a72c; }
+        li.INFO { border-color: #0969da; }
+        .meta { color: #656d76; font-size: 12px; }
+    </style>
+</head>
+<body>
+<h1>邮件告警弹窗演示（SSE + Notification API）</h1>
+<div class="toolbar">
+    <button id="notify-permission">请求通知权限</button>
+    <button id="test-popup">触发测试弹窗</button>
+    <span>连接状态：<span id="status" class="disconnected">未连接</span></span>
+    <span>｜在线订阅：<span id="online">-</span></span>
+</div>
+<ul id="history"></ul>
+
+<script>
+    const statusEl = document.getElementById('status');
+    const historyEl = document.getElementById('history');
+    const onlineEl = document.getElementById('online');
+
+    // 页面加载即建立 SSE 订阅
+    const source = new EventSource('/mail-alert/events/stream');
+    source.addEventListener('open', () => {
+        statusEl.textContent = '已连接';
+        statusEl.className = 'connected';
+    });
+    source.addEventListener('mail-alert', (event) => {
+        const data = JSON.parse(event.data);
+        showAlert(data);
+        notify(data);
+    });
+    source.addEventListener('error', () => {
+        statusEl.textContent = '连接断开（自动重连中）';
+        statusEl.className = 'disconnected';
+    });
+
+    // 请求浏览器通知权限
+    document.getElementById('notify-permission').addEventListener('click', () => {
+        Notification.requestPermission().then(permission => {
+            alert(permission === 'granted' ? '通知权限已开启' : '通知权限被拒绝，仅页面内展示');
+        });
+    });
+
+    // 手动触发后端测试推送
+    document.getElementById('test-popup').addEventListener('click', async () => {
+        const res = await fetch('/mail-alert/popup/test', { method: 'POST' });
+        const body = await res.json();
+        if (body && body.data) {
+            onlineEl.textContent = body.data.onlineClients;
+        }
+    });
+
+    // 页面内历史列表兜底展示
+    function showAlert(data) {
+        const li = document.createElement('li');
+        li.className = data.level;
+        li.innerHTML = '<strong>' + data.title + '</strong><br>' + data.content +
+            '<div class="meta">来自 ' + data.from + ' · ' + data.time + '</div>';
+        historyEl.prepend(li);
+    }
+
+    // 系统级真实弹窗（需用户授权）
+    function notify(data) {
+        if (Notification.permission === 'granted') {
+            new Notification(data.title, { body: data.content, tag: data.level });
+        }
+    }
+</script>
+</body>
+</html>

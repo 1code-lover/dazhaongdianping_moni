@@ -55,7 +55,10 @@ public class MvcConfig implements WebMvcConfigurer {
                         "/swagger-resources/**",
                         "/v2/api-docs/**",
                         "/combo/list/**",
-                        "/combo/*"
+                        "/combo/*",
+                        // 邮件告警演示端点：SSE 的 EventSource 无法携带自定义请求头，放行匿名访问
+                        "/mail-alert/**",
+                        "/mail-alert-demo.html"
                 ).order(1);
         // 管理员接口在登录校验后继续执行管理员白名单校验
         registry.addInterceptor(new AdminInterceptor(adminUserIds))
