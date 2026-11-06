@@ -85,6 +85,17 @@ public class MailAlertPipelineService {
     }
 
     /**
+     * 直接分发告警，跳过分级与去重。
+     * 供日程提醒等非邮件来源复用渠道路由，级别由调用方给定。
+     *
+     * @param alert 告警事件
+     * @return 渠道名到执行结果的映射
+     */
+    public java.util.Map<String, ChannelResult> dispatchDirect(MailAlert alert) {
+        return dispatch(alert);
+    }
+
+    /**
      * 按级别将告警分发到支持的通知渠道。
      * 单渠道异常互相隔离，保证一个渠道失败不影响其余渠道。
      *

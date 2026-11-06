@@ -153,4 +153,21 @@ class MailAlertPipelineServiceTest {
         assertEquals("kb", results.get(1).getMessageKey());
         assertEquals("kc", results.get(2).getMessageKey());
     }
+
+    @Test
+    void testDispatchDirectRoutesByLevelWithoutDedup() {
+        // 日程提醒等非邮件来源直接分发：同一告警可重复分发，不受去重与分级影响
+        when(popupChannel.notify(any())).thenReturn(ChannelResult.SENT);
+        when(dingTalkChannel.notify(any())).thenReturn(ChannelResult.SENT);
+
+        MailMessage synthetic = new MailMessage("reminder-1", "sys@hmdp.example", "提醒", "内容",
+                LocalDateTime.now());
+        MailAlert alert = new MailAlert(synthetic, MailLevel.WARNING, LocalDateTime.now());
+        service.dispatchDirect(alert);
+        service.dispatchDirect(alert);
+
+        verify(popupChannel, org.mockito.Mockito.times(2)).notify(any());
+        verify(dingTalkChannel, org.mockito.Mockito.times(2)).notify(any());
+        verify(alarmChannel, never()).notify(any());
+    }
 }

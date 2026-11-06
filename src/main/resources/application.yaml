@@ -97,6 +97,9 @@ app:
     mail-sender:
       enabled: ${MAIL_SENDER_ENABLED:true}
       to: ${MAIL_TO:}
+    reminder:
+      enabled: ${REMINDER_ENABLED:true}
+      poll-interval-ms: ${REMINDER_POLL_MS:30000}
     phone-alarm:
       enabled: ${PHONE_ALARM_ENABLED:false}
       adb-path: ${PHONE_ALARM_ADB:adb}

@@ -34,6 +34,9 @@ public class MailAlertProperties {
     /** IMAP 邮件读取配置 */
     private MailReaderProps mailReader = new MailReaderProps();
 
+    /** 日程提醒配置 */
+    private ReminderProps reminder = new ReminderProps();
+
     /**
      * 分级关键词配置项。
      *
@@ -138,5 +141,21 @@ public class MailAlertProperties {
 
         /** 拉取后是否标记为已读 */
         private boolean markAsRead = true;
+    }
+
+    /**
+     * 日程提醒配置项。
+     *
+     * @author ethan
+     * @date 2026-11-06
+     */
+    @Data
+    public static class ReminderProps {
+
+        /** 日程提醒开关 */
+        private boolean enabled = true;
+
+        /** 到期轮询间隔毫秒 */
+        private long pollIntervalMs = 30000;
     }
 }
